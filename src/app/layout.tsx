@@ -5,9 +5,9 @@ import { ThemeProvider } from '@/lib/store/theme-context';
 import AppShell from '@/components/layout/AppShell';
 
 export const metadata: Metadata = {
-  title: 'FreightPulse AI — Lead Intelligence & Cold Outreach for Freight Forwarders',
-  description: 'Multi-tenant B2B cold outreach & automated lead enrichment platform tailored for global logistics, ocean & air freight forwarders.',
-  keywords: ['Freight Forwarding', 'Cold Outreach', 'B2B Logistics', 'AI Lead Enrichment', 'Gemini AI', 'Freight Sales Automation'],
+  title: 'MarketPulse AI & Automation — Lead Intelligence & Cold Outreach',
+  description: 'Multi-tenant B2B cold outreach & automated lead enrichment platform powered by MarketPulse AI & Automation.',
+  keywords: ['MarketPulse AI', 'MarketPulse Automation', 'Cold Outreach', 'B2B Logistics', 'AI Lead Enrichment', 'Gemini AI', 'Email Automation'],
 };
 
 export default function RootLayout({

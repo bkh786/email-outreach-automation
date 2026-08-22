@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plane, Lock, Mail, ArrowRight, AlertCircle, Phone, MessageCircle } from 'lucide-react';
+import { Activity, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
@@ -44,27 +44,29 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#050811] flex flex-col justify-between items-center p-4 relative overflow-hidden">
       {/* Background ambient glowing spheres */}
-      <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-teal-600/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-blue-600/8 rounded-full blur-[150px] pointer-events-none" />
 
       {/* Spacer */}
       <div className="h-6" />
 
-      {/* Main Login Card - Replicating screenshot */}
+      {/* Main Login Card */}
       <div className="w-full max-w-[440px] bg-[#0A101E]/90 border border-slate-800/90 rounded-[32px] p-8 sm:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] relative z-10 backdrop-blur-2xl space-y-7 my-auto">
         {/* Logo Squircle with Neon Cyan Glow */}
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 rounded-2xl bg-[#0B1528] border-2 border-cyan-400/60 flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-transform hover:scale-105">
-            <Plane className="w-8 h-8 text-cyan-400 rotate-[-15deg]" />
+          <div className="w-16 h-16 rounded-2xl bg-[#0B1528] border-2 border-teal-400/60 flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(13,148,136,0.35)] transition-transform hover:scale-105">
+            <Activity className="w-8 h-8 text-teal-400" />
           </div>
 
-          <div className="flex items-center justify-center gap-2 pt-1">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">FreightPulse</h1>
-            <span className="text-xs uppercase tracking-wider font-black px-2 py-0.5 rounded-md bg-cyan-400 text-slate-950 shadow-sm shadow-cyan-400/40">
-              AI
-            </span>
+          <div className="flex flex-col items-center justify-center gap-1.5 pt-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-extrabold text-white tracking-tight">MarketPulse</h1>
+              <span className="text-[10px] uppercase tracking-wider font-black px-2 py-0.5 rounded-md bg-teal-400 text-slate-950 shadow-sm shadow-teal-400/40">
+                AI &amp; Automation
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-medium">B2B Lead Intelligence &amp; Autonomous Cold Outreach</p>
           </div>
-          <p className="text-xs text-slate-400 font-medium">Autonomous B2B Lead Intelligence for Freight Forwarders</p>
         </div>
 
         {/* Error Alert */}
@@ -87,7 +89,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="bkh786@gmail.com"
-                className="w-full bg-[#111A2E] border border-slate-700/60 rounded-2xl pl-11 pr-4 py-3.5 text-white text-xs placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none transition-all font-mono"
+                className="w-full bg-[#111A2E] border border-slate-700/60 rounded-2xl pl-11 pr-4 py-3.5 text-white text-xs placeholder:text-slate-500 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all font-mono"
               />
             </div>
           </div>
@@ -102,7 +104,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full bg-[#111A2E] border border-slate-700/60 rounded-2xl pl-11 pr-4 py-3.5 text-white text-xs placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none transition-all font-mono"
+                className="w-full bg-[#111A2E] border border-slate-700/60 rounded-2xl pl-11 pr-4 py-3.5 text-white text-xs placeholder:text-slate-500 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all font-mono"
               />
             </div>
           </div>
@@ -110,7 +112,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 hover:from-cyan-300 hover:to-teal-300 text-slate-950 font-black text-xs shadow-[0_8px_25px_rgba(6,182,212,0.35)] hover:shadow-[0_10px_30px_rgba(6,182,212,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-500 hover:from-teal-300 hover:to-cyan-300 text-slate-950 font-black text-xs shadow-[0_8px_25px_rgba(13,148,136,0.35)] hover:shadow-[0_10px_30px_rgba(13,148,136,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
           >
             <span>{loading ? 'Authenticating...' : 'Sign In to Workspace'}</span>
             <ArrowRight className="w-4 h-4" />
@@ -127,7 +129,7 @@ export default function LoginPage() {
               href="https://digipresence.in"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-bold text-cyan-400 hover:underline"
+              className="font-bold text-teal-400 hover:underline"
             >
               DigiPresence Solutions
             </a>
@@ -146,7 +148,7 @@ export default function LoginPage() {
             WhatsApp: <strong>9064435909</strong>
           </a>
           <span className="hidden sm:inline text-slate-700">|</span>
-          <a href="mailto:contact@digipresence.in" className="text-cyan-400 hover:underline">
+          <a href="mailto:contact@digipresence.in" className="text-teal-400 hover:underline">
             Email: <strong>contact@digipresence.in</strong>
           </a>
         </div>

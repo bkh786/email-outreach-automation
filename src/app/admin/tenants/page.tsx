@@ -59,8 +59,8 @@ export default function AdminTenantsPage() {
         setTenants([
           {
             id: 'admin-master',
-            email: 'admin@freightpulse.ai',
-            company_name: 'FreightPulse Master Platform',
+            email: 'admin@marketpulse.ai',
+            company_name: 'MarketPulse Master Platform',
             role: 'super_admin',
             created_at: new Date().toISOString(),
             stats: { total: 6, sent: 1, pending: 3 },
@@ -130,7 +130,7 @@ export default function AdminTenantsPage() {
   };
 
   const copyCredentials = (email: string) => {
-    navigator.clipboard.writeText(`FreightPulse AI Client Login:\nURL: ${window.location.origin}/login\nEmail: ${email}`);
+    navigator.clipboard.writeText(`MarketPulse AI Client Login:\nURL: ${window.location.origin}/login\nEmail: ${email}`);
     setCopiedId(email);
     setTimeout(() => setCopiedId(null), 2000);
   };

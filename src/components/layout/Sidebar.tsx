@@ -8,19 +8,18 @@ import {
   Users, 
   Building2, 
   Settings, 
-  Plane, 
+  Activity, 
   Sparkles, 
-  Send, 
-  Activity,
-  Database,
-  ShieldCheck,
-  LogOut
+  Database, 
+  LogOut 
 } from 'lucide-react';
 import { useApp } from '@/lib/store/app-context';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { leads, userConfig, isProcessingBatch, activeBatchProgress, isDemoMode } = useApp();
+  const { leads, profile, userConfig, isProcessingBatch, activeBatchProgress, isDemoMode } = useApp();
+
+  const isSuperAdmin = profile.role === 'super_admin';
 
   const navItems = [
     {
@@ -28,6 +27,7 @@ export default function Sidebar() {
       href: '/dashboard',
       icon: LayoutDashboard,
       badge: null,
+      show: true,
     },
     {
       name: 'Lead Intelligence',
@@ -37,19 +37,24 @@ export default function Sidebar() {
         ? `${leads.filter(l => l.status === 'pending').length} new` 
         : null,
       badgeColor: 'bg-teal-100 text-teal-800 dark:bg-cyan-500/20 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30',
+      show: true,
     },
+    // Super-admin should NOT have Self Brand Profile
     {
       name: 'Self Brand Profile',
       href: '/brand',
       icon: Building2,
       badge: null,
+      show: !isSuperAdmin,
     },
+    // Super Admin Tenant Provisioning
     {
       name: 'Client Tenants (Admin)',
       href: '/admin/tenants',
       icon: Database,
       badge: 'Admin',
       badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30',
+      show: isSuperAdmin,
     },
     {
       name: 'Settings & BYOK',
@@ -57,8 +62,9 @@ export default function Sidebar() {
       icon: Settings,
       badge: userConfig.gemini_api_key ? 'Active' : null,
       badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30',
+      show: true,
     },
-  ];
+  ].filter(item => item.show);
 
   const pendingCount = leads.filter(l => l.status === 'pending').length;
   const draftedCount = leads.filter(l => l.status === 'drafted' || l.status === 'approved').length;
@@ -70,24 +76,27 @@ export default function Sidebar() {
         {/* Brand Header */}
         <div className="h-18 flex items-center px-5 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-[#080D18]">
           <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-teal-600 dark:bg-gradient-to-tr dark:from-cyan-600 dark:via-teal-500 dark:to-amber-500 p-[2px] shadow-md shadow-teal-600/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-teal-600 dark:bg-gradient-to-tr dark:from-teal-600 dark:via-cyan-500 dark:to-emerald-500 p-[2px] shadow-md shadow-teal-600/20 group-hover:scale-105 transition-transform flex-shrink-0">
               <div className="w-full h-full bg-teal-600 dark:bg-[#0B1120] rounded-[10px] flex items-center justify-center">
-                <Plane className="w-5 h-5 text-white dark:text-cyan-400 rotate-[-15deg] group-hover:rotate-0 transition-transform" />
+                <Activity className="w-5 h-5 text-white dark:text-teal-400 group-hover:rotate-12 transition-transform" />
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">FreightPulse</span>
-                <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-teal-100 text-teal-800 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-400 dark:text-slate-950">AI</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">MarketPulse</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">B2B Logistics Outreach</p>
+              <span className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.2 rounded bg-teal-100 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300 font-mono">
+                AI &amp; Automation
+              </span>
             </div>
           </Link>
         </div>
 
         {/* Navigation Items */}
         <nav className="p-4 space-y-1.5">
-          <p className="px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase mb-2">Main Navigation</p>
+          <p className="px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase mb-2">
+            {isSuperAdmin ? 'Super Admin Portal' : 'Main Navigation'}
+          </p>
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
             const Icon = item.icon;
@@ -169,16 +178,16 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Multi-Tenant / System Status Badge & Sign Out */}
+        {/* Role & Sign Out */}
         <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1 pt-1">
-          <span className="flex items-center gap-1.5 font-medium">
+          <span className="flex items-center gap-1.5 font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            {isDemoMode ? 'Sandbox' : 'Supabase'}
+            {isSuperAdmin ? 'Super Admin' : 'Client Tenant'}
           </span>
 
           <button
             onClick={async () => {
-              if (confirm('Sign out of FreightPulse AI?')) {
+              if (confirm('Sign out of MarketPulse AI & Automation?')) {
                 const { createClient } = await import('@/lib/supabase/client');
                 const supabase = createClient();
                 await supabase.auth.signOut();

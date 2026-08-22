@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { 
   Building2, 
   Globe2, 
@@ -10,7 +11,9 @@ import {
   CheckCircle2, 
   Plane, 
   FileText,
-  ShieldCheck 
+  ShieldCheck,
+  Database,
+  ArrowRight
 } from 'lucide-react';
 import { useApp } from '@/lib/store/app-context';
 import { Profile } from '@/lib/types';
@@ -38,6 +41,8 @@ const COMMON_MARKETS = [
 
 export default function BrandProfilePage() {
   const { profile, updateProfile } = useApp();
+
+  const isSuperAdmin = profile.role === 'super_admin';
 
   const [formData, setFormData] = useState<Profile>({ ...profile });
   const [newService, setNewService] = useState('');
@@ -86,6 +91,33 @@ export default function BrandProfilePage() {
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };
+
+  if (isSuperAdmin) {
+    return (
+      <div className="space-y-6 pb-16">
+        <div className="rounded-3xl p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm text-center max-w-2xl mx-auto space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-cyan-500/10 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/20 flex items-center justify-center mx-auto">
+            <Database className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
+            Super Admin Portal
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            As a Super Admin, self-brand profiles are configured independently for each client tenant in the multi-tenant system. Manage or provision individual client tenant brand profiles under <strong>Client Tenants (Admin)</strong>.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/admin/tenants"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 font-bold text-xs shadow-md shadow-teal-600/20 dark:shadow-cyan-500/20 transition-all"
+            >
+              <span>Go to Client Tenants (Admin)</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-16">

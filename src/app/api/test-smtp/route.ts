@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
       const dispatch = await sendEmail({
         config,
         to: testRecipient,
-        subject: 'FreightPulse AI — SMTP Verification Test',
-        body: `Hello,\n\nThis is a confirmation test email sent from FreightPulse AI using your custom SMTP configuration (${config.host}:${config.port}).\n\nYour outbound email automation pipeline is ready for production outreach!\n\nBest regards,\nFreightPulse System Engine`,
+        subject: 'MarketPulse AI & Automation — SMTP Verification Test',
+        body: `Hello,\n\nThis is a confirmation test email sent from MarketPulse AI & Automation using your custom SMTP configuration (${config.host}:${config.port}).\n\nYour outbound email automation pipeline is ready for production outreach!\n\nBest regards,\nMarketPulse Automation Engine`,
       });
 
       if (!dispatch.success) {
