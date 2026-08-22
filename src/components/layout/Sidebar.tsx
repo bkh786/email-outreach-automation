@@ -170,13 +170,26 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Multi-Tenant / System Status Badge */}
-        <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+        {/* Multi-Tenant / System Status Badge & Sign Out */}
+        <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 pt-1">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             {isDemoMode ? 'Sandbox Ready' : 'Supabase Live'}
           </span>
-          <span className="text-slate-400">v1.2.0</span>
+
+          <button
+            onClick={async () => {
+              if (confirm('Sign out of FreightPulse AI?')) {
+                const { createClient } = await import('@/lib/supabase/client');
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                window.location.href = '/login';
+              }
+            }}
+            className="text-slate-400 hover:text-rose-400 font-semibold transition-colors"
+          >
+            Sign Out
+          </button>
         </div>
       </div>
     </aside>
