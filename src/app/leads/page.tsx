@@ -7,7 +7,7 @@ import CsvUploader from '@/components/leads/CsvUploader';
 import LeadDrawer from '@/components/leads/LeadDrawer';
 import ManualLeadModal from '@/components/leads/ManualLeadModal';
 import { useApp } from '@/lib/store/app-context';
-import { Sparkles, UploadCloud, Users, ArrowDownCircle } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 function LeadsContent() {
   const searchParams = useSearchParams();
@@ -26,14 +26,14 @@ function LeadsContent() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Page Header */}
+      {/* Page Header - Fully visible in both Light and Dark mode */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Users className="w-6 h-6 text-cyan-400" />
-            Lead Intelligence & Outreach Manager
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <Users className="w-6 h-6 text-teal-600 dark:text-cyan-400" />
+            <span>Lead Intelligence &amp; Outreach Manager</span>
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Ingest logistics prospect lists, execute AI web crawling, and manage high-synergy cold email campaigns.
           </p>
         </div>
@@ -75,7 +75,7 @@ function LeadsContent() {
 
 export default function LeadsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading Lead Intelligence...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-slate-500 dark:text-slate-400">Loading Lead Intelligence...</div>}>
       <LeadsContent />
     </Suspense>
   );

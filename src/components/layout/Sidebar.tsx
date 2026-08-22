@@ -17,9 +17,16 @@ import { useApp } from '@/lib/store/app-context';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { leads, profile, userConfig, isProcessingBatch, activeBatchProgress, isDemoMode } = useApp();
+  const { leads, profile, currentUserEmail, userConfig, isProcessingBatch, activeBatchProgress } = useApp();
 
-  const isSuperAdmin = profile.role === 'super_admin';
+  const isSuperAdmin = 
+    profile.role === 'super_admin' || 
+    profile.role === 'admin' || 
+    currentUserEmail === 'bkh786@gmail.com' || 
+    currentUserEmail === 'admin@freightpulse.ai' || 
+    currentUserEmail === 'admin@marketpulse.ai';
+
+  const isClient = !isSuperAdmin && profile.role === 'client';
 
   const navItems = [
     {
@@ -39,15 +46,15 @@ export default function Sidebar() {
       badgeColor: 'bg-teal-100 text-teal-800 dark:bg-cyan-500/20 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30',
       show: true,
     },
-    // Super-admin should NOT have Self Brand Profile
+    // Self Brand Profile: ONLY visible to Client role (NEVER super_admin)
     {
       name: 'Self Brand Profile',
       href: '/brand',
       icon: Building2,
       badge: null,
-      show: !isSuperAdmin,
+      show: isClient,
     },
-    // Super Admin Tenant Provisioning
+    // Super Admin Tenant Provisioning: ONLY visible to Super Admin
     {
       name: 'Client Tenants (Admin)',
       href: '/admin/tenants',
