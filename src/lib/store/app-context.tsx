@@ -6,8 +6,8 @@ import { isSupabaseConfigured, createClient } from '@/lib/supabase/client';
 
 const DEFAULT_PROFILE: Profile = {
   id: 'master-profile',
-  company_name: 'Global Freight Dynamics Ltd.',
-  website_url: 'https://globalfreightdynamics.com',
+  company_name: 'Freight Forwarding Agency',
+  website_url: '',
   role: 'client',
   services_offered: [
     'Transpacific Ocean FCL/LCL',
@@ -20,9 +20,9 @@ const DEFAULT_PROFILE: Profile = {
     'Europe -> North America',
     'Southeast Asia Transshipment'
   ],
-  unique_selling_proposition: 'Specialized in transpacific expedited air charters and guaranteed space allocations during peak shipping seasons with real-time GPS telemetry.',
-  strengths_and_certifications: 'IATA Cargo Agent, FIATA Member, WCA First-Tier Partner, ISO 9001:2015',
-  email_signature: `Best regards,\n\nTrade Lane Development Team\nGlobal Freight Dynamics\nDirect: +1 (555) 019-4820 | ops@globalfreightdynamics.com\nwww.globalfreightdynamics.com`
+  unique_selling_proposition: '',
+  strengths_and_certifications: '',
+  email_signature: ''
 };
 
 const DEFAULT_USER_CONFIG: UserConfig = {
@@ -33,150 +33,12 @@ const DEFAULT_USER_CONFIG: UserConfig = {
   smtp_user: '',
   smtp_pass: '',
   smtp_secure: false,
-  from_name: 'FreightPulse Operations',
-  from_email: 'outreach@freightpulse.ai',
+  from_name: 'Outreach Operations',
+  from_email: '',
   auto_send_enabled: false,
   max_daily_emails: 50,
   max_hourly_rate: 15,
 };
-
-const INITIAL_LEADS: Lead[] = [
-  {
-    id: 'lead-1',
-    company_name: 'Apex Transpacific Cargo',
-    contact_person: 'Marcus Vance',
-    email: 'm.vance@apextranspacific.com',
-    phone: '+1 (415) 890-1200',
-    country: 'United States',
-    website_url: 'https://apextranspacific.com',
-    source: 'jctrans',
-    company_profile: 'Mid-sized freight forwarder specializing in transpacific ocean container imports from Shenzhen and Ningbo to West Coast ports (LAX/Long Beach). High volume in electronics and consumer goods.',
-    financial_info: 'Estimated 8,500+ TEU annual volume across Pacific routes with bonded warehousing in Southern California.',
-    email_subject: 'Guaranteed space allocations & expedited transpacific benchmarks for Apex Transpacific',
-    email_body: `Hi Marcus,\n\nNoticed Apex Transpacific's consistent container throughput across the Shenzhen-Long Beach corridor.\n\nAt Global Freight Dynamics Ltd., we specialize in guaranteed peak-season allocations and dedicated transpacific air charter capacity with bonded CFS warehousing in LAX. We've helped regional forwarders reduce transit delays by 35% on transpacific lanes.\n\nWould you be open to a quick 5-minute comparison on current Q3 space allocations and contract rates?\n\nBest regards,\n\nTrade Lane Development Team\nGlobal Freight Dynamics\nDirect: +1 (555) 019-4820\nwww.globalfreightdynamics.com`,
-    status: 'sent',
-    sent_at: new Date(Date.now() - 3600 * 1000 * 2).toISOString(),
-    created_at: new Date(Date.now() - 3600 * 1000 * 48).toISOString(),
-  },
-  {
-    id: 'lead-2',
-    company_name: 'Bavaria Forwarding GmbH',
-    contact_person: 'Klaus Schneider',
-    email: 'klaus.schneider@bavariaforwarding.de',
-    phone: '+49 89 4501 229',
-    country: 'Germany',
-    website_url: 'https://bavariaforwarding.de',
-    source: 'csv_import',
-    company_profile: 'European freight consolidator focusing on automotive components, heavy industrial machinery, and precision tools between Germany, Central Europe, and US East Coast ports.',
-    financial_info: 'Handling ~12,000 air cargo shipments annually with IATA bonded facilities near Munich (MUC) and Frankfurt (FRA).',
-    email_subject: 'High-frequency transatlantic air charter & bonded CFS support for Bavaria Forwarding',
-    email_body: `Hi Klaus,\n\nSaw Bavaria Forwarding's leadership in high-value automotive and machinery consolidation across Central Europe.\n\nGlobal Freight Dynamics Ltd. operates bonded CFS facilities and priority transatlantic air charter routes with guaranteed temperature control and real-time telemetry.\n\nAre you looking for reliable capacity partners into North American hubs this quarter?\n\nBest regards,\n\nTrade Lane Development Team\nGlobal Freight Dynamics\nDirect: +1 (555) 019-4820\nwww.globalfreightdynamics.com`,
-    status: 'approved',
-    created_at: new Date(Date.now() - 3600 * 1000 * 24).toISOString(),
-  },
-  {
-    id: 'lead-3',
-    company_name: 'SinoTech Global Supply Chain',
-    contact_person: 'Zhang Wei',
-    email: 'zhang.wei@sinotechsupply.cn',
-    phone: '+86 21 6889 4410',
-    country: 'China',
-    website_url: 'https://sinotechsupply.cn',
-    source: 'manual_upload',
-    company_profile: 'Major cross-border e-commerce and electronics logistics provider operating multi-modal air-sea corridors from Shanghai and Shenzhen into European and North American fulfillment hubs.',
-    financial_info: 'Over 25,000 tons of air freight processed annually, holding NVOCC tier-one certifications.',
-    email_subject: 'Direct LAX & FRA customs clearance & DDP solutions for SinoTech Global',
-    email_body: `Hi Zhang Wei,\n\nFollowing SinoTech's fast expansion in cross-border e-commerce freight from Shanghai into US hubs.\n\nGlobal Freight Dynamics Ltd. provides automated customs clearance, DDP/DAP solutions, and bonded sortation directly adjacent to LAX and FRA.\n\nCould we explore a bilateral rate benchmark for your upcoming peak season volumes?\n\nBest regards,\n\nTrade Lane Development Team\nGlobal Freight Dynamics\nDirect: +1 (555) 019-4820\nwww.globalfreightdynamics.com`,
-    status: 'sent',
-    sent_at: new Date(Date.now() - 3600 * 1000 * 5).toISOString(),
-    created_at: new Date(Date.now() - 3600 * 1000 * 18).toISOString(),
-  },
-  {
-    id: 'lead-4',
-    company_name: 'Emirates Intermodal Logistics',
-    contact_person: 'Tariq Mansoor',
-    email: 'tariq@emiratesintermodal.ae',
-    phone: '+971 4 881 2900',
-    country: 'United Arab Emirates',
-    website_url: 'https://emiratesintermodal.ae',
-    source: 'jctrans',
-    company_profile: 'Dubai-based logistics hub managing sea-air transshipment between Southeast Asia, the Indian Subcontinent, and European distribution networks via Jebel Ali Port.',
-    financial_info: 'Managing 150,000+ sqm bonded logistics park in JAFZA with sea-air transshipment facilities.',
-    email_subject: 'Fast-track sea-air transpacific connection benchmarks for Emirates Intermodal',
-    email_body: `Hi Tariq,\n\nImpressed by Emirates Intermodal's sea-air connectivity through Jebel Ali.\n\nGlobal Freight Dynamics Ltd. works as a premier US & EU partner providing rapid air charter connections and bonded CFS sortation with zero customs clearance delays.\n\nLet's schedule a brief call this week to review synergy on your transpacific and transatlantic routes.\n\nBest regards,\n\nTrade Lane Development Team\nGlobal Freight Dynamics\nDirect: +1 (555) 019-4820\nwww.globalfreightdynamics.com`,
-    status: 'sent',
-    sent_at: new Date(Date.now() - 3600 * 1000 * 12).toISOString(),
-    created_at: new Date(Date.now() - 3600 * 1000 * 14).toISOString(),
-  },
-  {
-    id: 'lead-5',
-    company_name: 'Nordic SeaAir Forwarding AS',
-    contact_person: 'Henrik Lindqvist',
-    email: 'henrik@nordicseaair.no',
-    phone: '+47 22 99 10 40',
-    country: 'Norway',
-    website_url: 'https://nordicseaair.no',
-    source: 'csv_import',
-    company_profile: 'Scandinavian freight forwarder with deep expertise in perishable seafood air freight, maritime spare parts, and offshore project cargo across transatlantic routes.',
-    financial_info: 'Processes over 300 metric tons of fresh seafood weekly with certified cold chain infrastructure.',
-    email_subject: 'Cold-chain air charter & temperature-monitored space for Nordic SeaAir',
-    email_body: `Hi Henrik,\n\nSaw Nordic SeaAir's exceptional cold-chain transport footprint across transatlantic routes.\n\nGlobal Freight Dynamics Ltd. offers certified temperature-controlled air charter capacity and direct bonded CFS storage in North America.\n\nWould you be open to reviewing our guaranteed temperature-controlled space allocations for Q3?\n\nBest regards,\n\nTrade Lane Development Team\nGlobal Freight Dynamics\nDirect: +1 (555) 019-4820\nwww.globalfreightdynamics.com`,
-    status: 'drafted',
-    created_at: new Date(Date.now() - 3600 * 1000 * 8).toISOString(),
-  },
-  {
-    id: 'lead-6',
-    company_name: 'Tokyo Express Freight Lines',
-    contact_person: 'Kenji Sato',
-    email: 'k.sato@tokyoexpressfreight.jp',
-    phone: '+81 3 5540 8821',
-    country: 'Japan',
-    website_url: 'https://tokyoexpressfreight.jp',
-    source: 'jctrans',
-    company_profile: 'Japanese international freight forwarder specializing in high-precision electronics, optical instruments, and automotive parts into the US Midwest and East Coast.',
-    financial_info: 'Key partner for top-tier Japanese industrial manufacturers with ISO 9001:2015 and AEO certifications.',
-    status: 'pending',
-    created_at: new Date(Date.now() - 3600 * 1000 * 3).toISOString(),
-  },
-];
-
-const INITIAL_LOGS: CampaignLog[] = [
-  {
-    id: 'log-1',
-    event_type: 'sent',
-    lead_company: 'Apex Transpacific Cargo',
-    details: { to: 'm.vance@apextranspacific.com', subject: 'Guaranteed space allocations & expedited transpacific benchmarks' },
-    created_at: new Date(Date.now() - 3600 * 1000 * 2).toISOString(),
-  },
-  {
-    id: 'log-2',
-    event_type: 'sent',
-    lead_company: 'SinoTech Global Supply Chain',
-    details: { to: 'zhang.wei@sinotechsupply.cn', subject: 'Direct LAX & FRA customs clearance & DDP solutions' },
-    created_at: new Date(Date.now() - 3600 * 1000 * 5).toISOString(),
-  },
-  {
-    id: 'log-3',
-    event_type: 'sent',
-    lead_company: 'Emirates Intermodal Logistics',
-    details: { to: 'tariq@emiratesintermodal.ae', subject: 'Fast-track sea-air transpacific connection benchmarks' },
-    created_at: new Date(Date.now() - 3600 * 1000 * 12).toISOString(),
-  },
-  {
-    id: 'log-4',
-    event_type: 'researched',
-    lead_company: 'Bavaria Forwarding GmbH',
-    details: { subject: 'High-frequency transatlantic air charter & bonded CFS support' },
-    created_at: new Date(Date.now() - 3600 * 1000 * 24).toISOString(),
-  },
-  {
-    id: 'log-5',
-    event_type: 'uploaded',
-    lead_company: '6 Leads Ingested via Multi-Channel Sync',
-    details: { count: 6 },
-    created_at: new Date(Date.now() - 3600 * 1000 * 48).toISOString(),
-  },
-];
 
 interface AppContextType {
   leads: Lead[];
@@ -203,16 +65,23 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [userConfig, setUserConfig] = useState<UserConfig>(DEFAULT_USER_CONFIG);
-  const [logs, setLogs] = useState<CampaignLog[]>(INITIAL_LOGS);
+  const [logs, setLogs] = useState<CampaignLog[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [isProcessingBatch, setIsProcessingBatch] = useState<boolean>(false);
   const [activeBatchProgress, setActiveBatchProgress] = useState<{ current: number; total: number } | null>(null);
 
   useEffect(() => {
+    // Clear legacy mock data caches
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('freightpulse_leads');
+      localStorage.removeItem('freightpulse_logs');
+      localStorage.removeItem('freightpulse_profile');
+      localStorage.removeItem('freightpulse_config');
+    }
     loadInitialData();
   }, []);
 
@@ -222,7 +91,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const supabaseReady = isSupabaseConfigured();
     setIsDemoMode(!supabaseReady);
 
-    // If Supabase is available, check authenticated user and their real role
+    // If Supabase is available, load user, profile, real leads and real logs
     if (supabaseReady) {
       try {
         const supabase = createClient();
@@ -261,51 +130,89 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             setProfile(resolvedProfile);
             localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
           }
+
+          // Fetch real user config
+          const { data: configData } = await supabase
+            .from('user_configs')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (configData) {
+            setUserConfig(configData);
+            localStorage.setItem('marketpulse_config', JSON.stringify(configData));
+          }
+
+          // Fetch real leads for this user/tenant from Supabase
+          const { data: dbLeads } = await supabase
+            .from('leads')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (dbLeads) {
+            setLeads(dbLeads);
+            localStorage.setItem('marketpulse_leads', JSON.stringify(dbLeads));
+          } else {
+            setLeads([]);
+            localStorage.setItem('marketpulse_leads', JSON.stringify([]));
+          }
+
+          // Fetch real campaign activity logs from Supabase
+          const { data: dbLogs } = await supabase
+            .from('campaign_logs')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (dbLogs) {
+            setLogs(dbLogs);
+            localStorage.setItem('marketpulse_logs', JSON.stringify(dbLogs));
+          } else {
+            setLogs([]);
+            localStorage.setItem('marketpulse_logs', JSON.stringify([]));
+          }
+
+          return;
         }
       } catch (e) {
-        console.error('Error fetching Supabase auth user:', e);
+        console.error('Error fetching Supabase auth user / data:', e);
       }
     }
 
-    // Try reading from localStorage for leads and config
+    // Fallback: Read real user data from localStorage
     try {
-      const storedLeads = localStorage.getItem('marketpulse_leads') || localStorage.getItem('freightpulse_leads');
-      const storedConfig = localStorage.getItem('marketpulse_config') || localStorage.getItem('freightpulse_config');
-      const storedLogs = localStorage.getItem('marketpulse_logs') || localStorage.getItem('freightpulse_logs');
+      const storedLeads = localStorage.getItem('marketpulse_leads');
+      const storedProfile = localStorage.getItem('marketpulse_profile');
+      const storedConfig = localStorage.getItem('marketpulse_config');
+      const storedLogs = localStorage.getItem('marketpulse_logs');
 
       if (storedLeads) setLeads(JSON.parse(storedLeads));
-      else {
-        setLeads(INITIAL_LEADS);
-        localStorage.setItem('marketpulse_leads', JSON.stringify(INITIAL_LEADS));
-      }
+      else setLeads([]);
+
+      if (storedProfile) setProfile(JSON.parse(storedProfile));
+      else setProfile(DEFAULT_PROFILE);
 
       if (storedConfig) setUserConfig(JSON.parse(storedConfig));
-      else {
-        setUserConfig(DEFAULT_USER_CONFIG);
-        localStorage.setItem('marketpulse_config', JSON.stringify(DEFAULT_USER_CONFIG));
-      }
+      else setUserConfig(DEFAULT_USER_CONFIG);
 
       if (storedLogs) setLogs(JSON.parse(storedLogs));
-      else {
-        setLogs(INITIAL_LOGS);
-        localStorage.setItem('marketpulse_logs', JSON.stringify(INITIAL_LOGS));
-      }
+      else setLogs([]);
     } catch (e) {
       console.error('Error loading stored data:', e);
-      setLeads(INITIAL_LEADS);
+      setLeads([]);
+      setProfile(DEFAULT_PROFILE);
       setUserConfig(DEFAULT_USER_CONFIG);
-      setLogs(INITIAL_LOGS);
+      setLogs([]);
     }
   };
 
-  const persistLeads = (newLeads: Lead[]) => {
+  const persistLeads = async (newLeads: Lead[]) => {
     setLeads(newLeads);
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_leads', JSON.stringify(newLeads));
     }
   };
 
-  const persistLogs = (newLogs: CampaignLog[]) => {
+  const persistLogs = async (newLogs: CampaignLog[]) => {
     setLogs(newLogs);
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_logs', JSON.stringify(newLogs));
@@ -313,6 +220,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addLeads = async (newLeadsData: Partial<Lead>[]) => {
+    const supabaseReady = isSupabaseConfigured();
     const formattedLeads: Lead[] = newLeadsData.map((data, idx) => ({
       id: `lead-${Date.now()}-${idx}`,
       company_name: data.company_name || 'Unknown Company',
@@ -326,8 +234,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
     }));
 
+    if (supabaseReady) {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const insertPayload = formattedLeads.map(l => ({
+            ...l,
+            user_id: user.id,
+          }));
+          await supabase.from('leads').insert(insertPayload);
+        }
+      } catch (err) {
+        console.error('Error inserting leads into Supabase:', err);
+      }
+    }
+
     const updated = [...formattedLeads, ...leads];
-    persistLeads(updated);
+    await persistLeads(updated);
 
     const newLog: CampaignLog = {
       id: `log-${Date.now()}`,
@@ -336,23 +260,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       details: { count: formattedLeads.length },
       created_at: new Date().toISOString(),
     };
-    persistLogs([newLog, ...logs]);
+    await persistLogs([newLog, ...logs]);
   };
 
   const updateLead = async (id: string, updates: Partial<Lead>) => {
     const updated = leads.map(lead => lead.id === id ? { ...lead, ...updates } : lead);
-    persistLeads(updated);
+    await persistLeads(updated);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = createClient();
+        await supabase.from('leads').update(updates).eq('id', id);
+      } catch (err) {
+        console.error('Error updating lead in Supabase:', err);
+      }
+    }
   };
 
   const deleteLead = async (id: string) => {
     const updated = leads.filter(lead => lead.id !== id);
-    persistLeads(updated);
+    await persistLeads(updated);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = createClient();
+        await supabase.from('leads').delete().eq('id', id);
+      } catch (err) {
+        console.error('Error deleting lead in Supabase:', err);
+      }
+    }
   };
 
   const deleteMultipleLeads = async (ids: string[]) => {
     const set = new Set(ids);
     const updated = leads.filter(lead => !set.has(lead.id));
-    persistLeads(updated);
+    await persistLeads(updated);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = createClient();
+        await supabase.from('leads').delete().in('id', ids);
+      } catch (err) {
+        console.error('Error deleting multiple leads in Supabase:', err);
+      }
+    }
   };
 
   const enrichSingleLead = async (id: string): Promise<boolean> => {
@@ -487,12 +438,58 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_profile', JSON.stringify(newProfile));
     }
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            company_name: newProfile.company_name,
+            website_url: newProfile.website_url,
+            services_offered: newProfile.services_offered,
+            target_markets: newProfile.target_markets,
+            unique_selling_proposition: newProfile.unique_selling_proposition,
+            strengths_and_certifications: newProfile.strengths_and_certifications,
+            email_signature: newProfile.email_signature,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      } catch (err) {
+        console.error('Error updating profile in Supabase:', err);
+      }
+    }
   };
 
   const updateUserConfig = async (newConfig: UserConfig) => {
     setUserConfig(newConfig);
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_config', JSON.stringify(newConfig));
+    }
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('user_configs').upsert({
+            id: user.id,
+            gemini_api_key: newConfig.gemini_api_key,
+            smtp_host: newConfig.smtp_host,
+            smtp_port: newConfig.smtp_port,
+            smtp_user: newConfig.smtp_user,
+            smtp_pass: newConfig.smtp_pass,
+            smtp_secure: newConfig.smtp_secure,
+            from_name: newConfig.from_name,
+            from_email: newConfig.from_email,
+            auto_send_enabled: newConfig.auto_send_enabled,
+            max_daily_emails: newConfig.max_daily_emails,
+            max_hourly_rate: newConfig.max_hourly_rate,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      } catch (err) {
+        console.error('Error updating config in Supabase:', err);
+      }
     }
   };
 
@@ -503,10 +500,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('marketpulse_config');
       localStorage.removeItem('marketpulse_logs');
     }
-    setLeads(INITIAL_LEADS);
+    setLeads([]);
     setProfile(DEFAULT_PROFILE);
     setUserConfig(DEFAULT_USER_CONFIG);
-    setLogs(INITIAL_LOGS);
+    setLogs([]);
   };
 
   const refreshData = async () => {
