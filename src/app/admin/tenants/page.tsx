@@ -56,7 +56,6 @@ export default function AdminTenantsPage() {
       if (data.success) {
         setTenants(data.tenants || []);
       } else {
-        // Fallback for demo mode
         setTenants([
           {
             id: 'admin-master',
@@ -146,22 +145,22 @@ export default function AdminTenantsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 dark:bg-cyan-500/10 border border-teal-200 dark:border-cyan-500/30 text-teal-700 dark:text-cyan-400 text-xs font-bold mb-2">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Super Admin Multi-Tenant Portal</span>
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-cyan-400" />
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-teal-600 dark:text-cyan-400" />
             Client Tenant Provisioning & Management
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Create independent tenant accounts for each logistics client with isolated Row-Level Security and custom trade profiles.
           </p>
         </div>
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-500 text-white dark:text-slate-950 font-extrabold text-xs shadow-md shadow-teal-600/20 dark:shadow-cyan-500/20 active:scale-95 transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>Provision New Client Tenant</span>
@@ -170,12 +169,12 @@ export default function AdminTenantsPage() {
 
       {/* Success Notification */}
       {successMessage && (
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center justify-between shadow-lg">
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
-          <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 font-bold hover:underline">
+          <button onClick={() => setSuccessMessage(null)} className="text-emerald-700 dark:text-emerald-400 font-bold hover:underline">
             Dismiss
           </button>
         </div>
@@ -183,29 +182,29 @@ export default function AdminTenantsPage() {
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl p-5 bg-[#0F172A]/80 border border-slate-800 shadow-lg">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Client Tenants</span>
-          <h3 className="text-2xl font-extrabold text-white mt-1">{tenants.length}</h3>
-          <p className="text-[11px] text-cyan-400 mt-1">Multi-tenant isolated databases</p>
+        <div className="rounded-2xl p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Client Tenants</span>
+          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{tenants.length}</h3>
+          <p className="text-[11px] text-teal-600 dark:text-cyan-400 mt-1 font-medium">Multi-tenant isolated databases</p>
         </div>
-        <div className="rounded-2xl p-5 bg-[#0F172A]/80 border border-slate-800 shadow-lg">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Aggregated Leads</span>
-          <h3 className="text-2xl font-extrabold text-amber-400 mt-1">
+        <div className="rounded-2xl p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Aggregated Leads</span>
+          <h3 className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">
             {tenants.reduce((acc, t) => acc + (t.stats?.total || 0), 0)}
           </h3>
-          <p className="text-[11px] text-slate-400 mt-1">Across all forwarder tenants</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Across all forwarder tenants</p>
         </div>
-        <div className="rounded-2xl p-5 bg-[#0F172A]/80 border border-slate-800 shadow-lg">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Emails Dispatched</span>
-          <h3 className="text-2xl font-extrabold text-emerald-400 mt-1">
+        <div className="rounded-2xl p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Emails Dispatched</span>
+          <h3 className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
             {tenants.reduce((acc, t) => acc + (t.stats?.sent || 0), 0)}
           </h3>
-          <p className="text-[11px] text-slate-400 mt-1">Automated outreach velocity</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Automated outreach velocity</p>
         </div>
       </div>
 
       {/* Search & Tenants Table */}
-      <div className="rounded-3xl bg-[#0F172A]/90 border border-slate-800 shadow-2xl overflow-hidden space-y-4 p-6">
+      <div className="rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-4 p-6 transition-colors">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -214,22 +213,22 @@ export default function AdminTenantsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by client company name or email..."
-              className="w-full text-xs bg-[#0B1120] border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-white focus:border-cyan-500 focus:outline-none"
+              className="w-full text-xs bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
             />
           </div>
 
           <button
             onClick={fetchTenants}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </button>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#0B1120] text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+            <thead className="bg-slate-50 dark:bg-[#0B1120] text-slate-600 dark:text-slate-400 uppercase tracking-wider font-bold border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="py-3 px-4">Client Agency</th>
                 <th className="py-3 px-4">Admin Email</th>
@@ -240,51 +239,51 @@ export default function AdminTenantsPage() {
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 text-slate-300">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {filteredTenants.map((tenant) => (
-                <tr key={tenant.id} className="hover:bg-slate-800/40 transition-colors">
+                <tr key={tenant.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400 font-bold text-xs">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-teal-700 dark:text-cyan-400 font-bold text-xs">
                         {tenant.company_name.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-semibold text-white">{tenant.company_name}</p>
-                        <p className="text-[11px] text-slate-500 font-mono">ID: {tenant.id.slice(0, 8)}...</p>
+                        <p className="font-bold text-slate-900 dark:text-white">{tenant.company_name}</p>
+                        <p className="text-[11px] text-slate-400 font-mono">ID: {tenant.id.slice(0, 8)}...</p>
                       </div>
                     </div>
                   </td>
 
-                  <td className="py-3.5 px-4 font-mono text-slate-300">
+                  <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-slate-300">
                     {tenant.email}
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                       tenant.role === 'super_admin'
-                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                        : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+                        ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30'
+                        : 'bg-teal-50 dark:bg-cyan-500/10 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30'
                     }`}>
                       {tenant.role === 'super_admin' ? 'Super Admin' : 'Client Tenant'}
                     </span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-slate-400 max-w-[160px] truncate">
+                  <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 max-w-[160px] truncate">
                     {tenant.target_markets?.join(', ') || 'Global'}
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <span className="font-bold text-white">{tenant.stats?.total || 0}</span> leads &bull; <span className="font-bold text-emerald-400">{tenant.stats?.sent || 0}</span> sent
+                    <span className="font-bold text-slate-900 dark:text-white">{tenant.stats?.total || 0}</span> leads &bull; <span className="font-bold text-emerald-600 dark:text-emerald-400">{tenant.stats?.sent || 0}</span> sent
                   </td>
 
-                  <td className="py-3.5 px-4 text-slate-400 text-[11px]">
+                  <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
                     {new Date(tenant.created_at).toLocaleDateString()}
                   </td>
 
                   <td className="py-3.5 px-4 text-right">
                     <button
                       onClick={() => copyCredentials(tenant.email)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition-all"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition-all"
                       title="Copy Login Link & Email"
                     >
                       {copiedId === tenant.email ? 'Copied!' : 'Copy Login'}
@@ -299,23 +298,23 @@ export default function AdminTenantsPage() {
 
       {/* Modal: Provision New Client Tenant */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-[#0F172A] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <Building2 className="w-5 h-5 text-cyan-400" />
+                <Building2 className="w-5 h-5 text-teal-600 dark:text-cyan-400" />
                 <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">Provision Client Tenant</h3>
-                  <p className="text-xs text-slate-400">Creates isolated login credentials and database space</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Provision Client Tenant</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Creates isolated login credentials and database space</p>
                 </div>
               </div>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg">
                 ✕
               </button>
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -323,32 +322,32 @@ export default function AdminTenantsPage() {
 
             <form onSubmit={handleCreateTenant} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Client Freight Company Name *</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Client Freight Company Name *</label>
                 <input
                   type="text"
                   required
                   value={form.company_name}
                   onChange={(e) => setForm({ ...form, company_name: e.target.value })}
                   placeholder="e.g. Apex Global Cargo Ltd."
-                  className="w-full bg-[#0B1120] border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Client Login Email *</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Client Login Email *</label>
                   <input
                     type="email"
                     required
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder="ops@apexglobalcargo.com"
-                    className="w-full bg-[#0B1120] border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none font-mono"
+                    className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Temporary Password *</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Temporary Password *</label>
                   <input
                     type="text"
                     required
@@ -356,45 +355,45 @@ export default function AdminTenantsPage() {
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="ClientPass2025!"
-                    className="w-full bg-[#0B1120] border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none font-mono"
+                    className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Primary Contact Person</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Primary Contact Person</label>
                 <input
                   type="text"
                   value={form.contact_person}
                   onChange={(e) => setForm({ ...form, contact_person: e.target.value })}
                   placeholder="e.g. David Miller (VP of Operations)"
-                  className="w-full bg-[#0B1120] border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Assigned Trade Corridors</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Assigned Trade Corridors</label>
                 <input
                   type="text"
                   value={form.target_markets}
                   onChange={(e) => setForm({ ...form, target_markets: e.target.value })}
                   placeholder="Asia -> North America, Europe -> North America"
-                  className="w-full bg-[#0B1120] border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:border-cyan-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-bold shadow-lg shadow-cyan-500/20 active:scale-95 transition-all"
+                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-500 text-white dark:text-slate-950 font-bold shadow-md shadow-teal-600/20 dark:shadow-cyan-500/20 active:scale-95 transition-all"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Provisioning...' : 'Provision Client Tenant'}</span>

@@ -11,7 +11,6 @@ import {
   X, 
   Download, 
   Sparkles,
-  ArrowRight,
   RefreshCw
 } from 'lucide-react';
 import { Lead } from '@/lib/types';
@@ -193,31 +192,31 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
   };
 
   return (
-    <div className="rounded-3xl p-6 sm:p-8 bg-[#0F172A] border border-cyan-500/30 shadow-2xl space-y-6">
+    <div className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 transition-colors">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-cyan-500/10 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/20 flex items-center justify-center">
             <UploadCloud className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white tracking-tight">Bulk Lead Ingestion Wizard</h3>
-            <p className="text-xs text-slate-400">Upload your logistics prospect database (.csv or .xlsx) for autonomous AI enrichment</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Bulk Lead Ingestion Wizard</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Upload your logistics prospect database (.csv or .xlsx) for autonomous AI enrichment</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={downloadSampleCsv}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors border border-slate-700"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-800 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700"
           >
-            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <Download className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
             <span>Download Sample CSV</span>
           </button>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -235,8 +234,8 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200 ${
             dragActive
-              ? 'border-cyan-400 bg-cyan-500/10 scale-[1.01]'
-              : 'border-slate-700/80 hover:border-cyan-500/50 bg-[#0B1120]/60 hover:bg-[#0B1120]'
+              ? 'border-teal-500 bg-teal-50/50 dark:bg-cyan-500/10 scale-[1.01]'
+              : 'border-slate-200 dark:border-slate-700/80 hover:border-teal-500/50 bg-slate-50/50 dark:bg-[#0B1120]/60 hover:bg-slate-50 dark:hover:bg-[#0B1120]'
           }`}
         >
           <input
@@ -247,30 +246,30 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
             className="hidden"
           />
 
-          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 mx-auto flex items-center justify-center mb-4 border border-cyan-500/20 shadow-inner">
+          <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-cyan-500/10 text-teal-700 dark:text-cyan-400 mx-auto flex items-center justify-center mb-4 border border-teal-200 dark:border-cyan-500/20 shadow-inner">
             <FileSpreadsheet className="w-8 h-8" />
           </div>
 
-          <p className="text-base font-bold text-white">
+          <p className="text-base font-bold text-slate-900 dark:text-white">
             Click to upload or drag & drop spreadsheet
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Supports CSV, XLSX, XLS with automatic header detection (Company Name, Contact, Email, Phone, Website, Country)
           </p>
 
-          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 text-[11px] text-slate-300 border border-slate-700">
+          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 text-[11px] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
             <span>Supports JCtrans exports, LinkedIn Sales Nav CSVs, customs manifests</span>
           </div>
         </div>
       ) : (
         /* Column Mapping & Preview Section */
         <div className="space-y-6">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <div>
-                <p className="text-sm font-bold text-white">{fileName}</p>
-                <p className="text-xs text-slate-400">{rawRows.length} prospects detected in file</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">{fileName}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{rawRows.length} prospects detected in file</p>
               </div>
             </div>
 
@@ -280,7 +279,7 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
                 setFileName(null);
                 setHeaders([]);
               }}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-rose-400 transition-colors"
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-rose-600 transition-colors font-medium"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Choose Different File</span>
@@ -289,7 +288,7 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
 
           {/* Column Mapping Selectors */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-wider">
               Verify Field Mapping
             </h4>
 
@@ -302,14 +301,14 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
                 { key: 'website_url', label: 'Website URL (for AI Scraper)', required: false },
                 { key: 'phone', label: 'Phone Number', required: false },
               ].map((field) => (
-                <div key={field.key} className="p-3 rounded-xl bg-[#0B1120] border border-slate-800">
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                <div key={field.key} className="p-3 rounded-xl bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     {field.label}
                   </label>
                   <select
                     value={(columnMap as any)[field.key] || ''}
                     onChange={(e) => setColumnMap({ ...columnMap, [field.key]: e.target.value })}
-                    className="w-full text-xs bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-cyan-500 focus:outline-none"
+                    className="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
                   >
                     <option value="">-- Select Column --</option>
                     {headers.map((h) => (
@@ -323,14 +322,14 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
             </div>
           </div>
 
-          {/* Preview Table (First 3 rows) */}
+          {/* Preview Table */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Data Preview (First 3 Rows)
             </h4>
-            <div className="overflow-x-auto rounded-xl border border-slate-800 bg-[#0B1120]/80">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0B1120]/80">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800">
+                <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="py-2.5 px-4">Company</th>
                     <th className="py-2.5 px-4">Contact</th>
@@ -339,22 +338,22 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
                     <th className="py-2.5 px-4">Website</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 text-slate-300">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                   {rawRows.slice(0, 3).map((row, idx) => (
                     <tr key={idx}>
-                      <td className="py-2.5 px-4 font-semibold text-white">
+                      <td className="py-2.5 px-4 font-bold text-slate-900 dark:text-white">
                         {columnMap.company_name ? row[columnMap.company_name] || '-' : '-'}
                       </td>
                       <td className="py-2.5 px-4">
                         {columnMap.contact_person ? row[columnMap.contact_person] || '-' : '-'}
                       </td>
-                      <td className="py-2.5 px-4 font-mono text-cyan-400">
+                      <td className="py-2.5 px-4 font-mono text-teal-700 dark:text-cyan-400">
                         {columnMap.email ? row[columnMap.email] || '-' : '-'}
                       </td>
                       <td className="py-2.5 px-4">
                         {columnMap.country ? row[columnMap.country] || '-' : '-'}
                       </td>
-                      <td className="py-2.5 px-4 text-slate-400 truncate max-w-[150px]">
+                      <td className="py-2.5 px-4 text-slate-500 dark:text-slate-400 truncate max-w-[150px]">
                         {columnMap.website_url ? row[columnMap.website_url] || '-' : '-'}
                       </td>
                     </tr>
@@ -369,14 +368,14 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
             {onClose && (
               <button
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
               >
                 Cancel
               </button>
             )}
             <button
               onClick={handleConfirmImport}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-500 text-white dark:text-slate-950 font-bold text-xs shadow-md shadow-teal-600/20 dark:shadow-cyan-500/20 active:scale-95 transition-all"
             >
               <Sparkles className="w-4 h-4" />
               <span>Confirm & Ingest {rawRows.length} Leads</span>
@@ -386,7 +385,7 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
       )}
 
       {error && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+        <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>

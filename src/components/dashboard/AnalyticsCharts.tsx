@@ -10,42 +10,18 @@ import {
   ResponsiveContainer, 
   PieChart, 
   Pie, 
-  Cell,
-  BarChart,
-  Bar,
-  CartesianGrid,
-  Legend
+  Cell, 
+  CartesianGrid 
 } from 'recharts';
 import { useApp } from '@/lib/store/app-context';
-import { BarChart3, PieChart as PieIcon, Globe, Layers } from 'lucide-react';
+import { BarChart3, Globe } from 'lucide-react';
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: '#F59E0B',   // amber
-  enriching: '#06B6D4', // cyan
-  drafted: '#38BDF8',   // sky
-  approved: '#818CF8',  // indigo
-  sent: '#10B981',      // emerald
-  failed: '#EF4444',    // red
-};
-
-const COUNTRY_COLORS = ['#06B6D4', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899', '#3B82F6', '#64748B'];
+const COUNTRY_COLORS = ['#0D9488', '#F59E0B', '#10B981', '#6366F1', '#EC4899', '#3B82F6', '#64748B'];
 
 export default function AnalyticsCharts() {
   const { leads } = useApp();
 
-  // 1. Status Breakdown
-  const statusCounts = leads.reduce((acc, lead) => {
-    acc[lead.status] = (acc[lead.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const statusData = Object.entries(statusCounts).map(([name, value]) => ({
-    name: name.charAt(0).toUpperCase() + name.slice(1),
-    value,
-    statusKey: name,
-  }));
-
-  // 2. Country Breakdown
+  // Country Breakdown
   const countryCounts = leads.reduce((acc, lead) => {
     const country = lead.country || 'Other';
     acc[country] = (acc[country] || 0) + 1;
@@ -61,7 +37,7 @@ export default function AnalyticsCharts() {
       color: COUNTRY_COLORS[idx % COUNTRY_COLORS.length],
     }));
 
-  // 3. 30-day timeline trend (generated dynamically with realistic distribution)
+  // 14-day timeline trend
   const timelineData = Array.from({ length: 14 }).map((_, i) => {
     const dayNumber = i + 1;
     const isRecent = i >= 10;
@@ -77,24 +53,24 @@ export default function AnalyticsCharts() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 my-6">
-      {/* 30-Day Activity Trend (Spans 2 columns) */}
-      <div className="lg:col-span-2 rounded-2xl p-6 bg-[#0F172A]/80 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
+      {/* 14-Day Activity Trend */}
+      <div className="lg:col-span-2 rounded-2xl p-6 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-teal-600 dark:text-cyan-400" />
               Outreach & Research Velocity (Last 14 Days)
             </h3>
-            <p className="text-xs text-slate-400">Leads researched vs. high-conversion pitches sent</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Leads researched vs. high-conversion pitches sent</p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+          <div className="flex items-center gap-4 text-xs font-semibold">
+            <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-teal-500" />
               Researched
             </span>
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+            <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
               Dispatched
             </span>
           </div>
@@ -105,42 +81,43 @@ export default function AnalyticsCharts() {
             <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorProcessed" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#06B6D4" stopOpacity={0.0}/>
+                  <stop offset="5%" stopColor="#0D9488" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#0D9488" stopOpacity={0.0}/>
                 </linearGradient>
                 <linearGradient id="colorSent" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10B981" stopOpacity={0.4}/>
                   <stop offset="95%" stopColor="#10B981" stopOpacity={0.0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" className="dark:stroke-[#1E293B]" vertical={false} />
               <XAxis 
                 dataKey="date" 
-                stroke="#64748B" 
+                stroke="#94A3B8" 
                 fontSize={11} 
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis 
-                stroke="#64748B" 
+                stroke="#94A3B8" 
                 fontSize={11} 
                 tickLine={false}
                 axisLine={false}
               />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: '#0B1120', 
-                  borderColor: '#334155', 
+                  backgroundColor: '#FFFFFF', 
+                  borderColor: '#CBD5E1', 
                   borderRadius: '12px',
-                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-                  fontSize: '12px'
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                  fontSize: '12px',
+                  color: '#0F172A'
                 }} 
               />
               <Area 
                 type="monotone" 
                 dataKey="processed" 
                 name="AI Researched"
-                stroke="#06B6D4" 
+                stroke="#0D9488" 
                 strokeWidth={2.5}
                 fillOpacity={1} 
                 fill="url(#colorProcessed)" 
@@ -159,15 +136,15 @@ export default function AnalyticsCharts() {
         </div>
       </div>
 
-      {/* Country Distribution & Status Breakdown */}
-      <div className="rounded-2xl p-6 bg-[#0F172A]/80 border border-slate-800 shadow-xl flex flex-col justify-between">
+      {/* Country Distribution */}
+      <div className="rounded-2xl p-6 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors">
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Globe className="w-4 h-4 text-amber-400" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Globe className="w-4 h-4 text-amber-500" />
               Lead Regional Distribution
             </h3>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+            <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
               {leads.length} Total
             </span>
           </div>
@@ -186,34 +163,35 @@ export default function AnalyticsCharts() {
                     dataKey="value"
                   >
                     {countryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="#0F172A" strokeWidth={2} />
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke="#FFFFFF" className="dark:stroke-[#0F172A]" strokeWidth={2} />
                     ))}
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#0B1120', 
-                      borderColor: '#334155', 
+                      backgroundColor: '#FFFFFF', 
+                      borderColor: '#CBD5E1', 
                       borderRadius: '10px',
-                      fontSize: '12px'
+                      fontSize: '12px',
+                      color: '#0F172A'
                     }} 
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-slate-500 text-xs">No country data available</div>
+              <div className="text-slate-400 text-xs">No country data available</div>
             )}
           </div>
         </div>
 
         {/* Legend list */}
-        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-800 text-xs">
+        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
           {countryData.slice(0, 4).map((country, idx) => (
-            <div key={idx} className="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-900/60 border border-slate-800">
-              <span className="flex items-center gap-1.5 text-slate-300 truncate max-w-[90px]">
+            <div key={idx} className="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 truncate max-w-[90px] font-medium">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: country.color }} />
                 {country.name}
               </span>
-              <span className="font-bold text-white">{country.value}</span>
+              <span className="font-bold text-slate-900 dark:text-white">{country.value}</span>
             </div>
           ))}
         </div>

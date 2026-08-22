@@ -3,36 +3,26 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type Mode = 'light' | 'dark';
-export type AccentColor = 'teal' | 'cyan' | 'blue' | 'amber' | 'purple';
 
 interface ThemeContextType {
   mode: Mode;
-  accent: AccentColor;
-  setMode: (mode: Mode) => void;
-  setAccent: (accent: AccentColor) => void;
   toggleMode: () => void;
+  setMode: (mode: Mode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<Mode>('light'); // Default to light mode as requested!
-  const [accent, setAccentState] = useState<AccentColor>('teal');
+  const [mode, setModeState] = useState<Mode>('light');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const savedMode = localStorage.getItem('freightpulse_mode') as Mode;
-    const savedAccent = localStorage.getItem('freightpulse_accent') as AccentColor;
-
     if (savedMode) {
       setModeState(savedMode);
     } else {
       setModeState('light');
-    }
-
-    if (savedAccent) {
-      setAccentState(savedAccent);
     }
   }, []);
 
@@ -40,8 +30,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
 
     const root = document.documentElement;
-    
-    // Toggle dark/light class
     if (mode === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
@@ -50,28 +38,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove('dark');
     }
 
-    // Set data-accent attribute
-    root.setAttribute('data-accent', accent);
-    root.setAttribute('data-mode', mode);
-
     localStorage.setItem('freightpulse_mode', mode);
-    localStorage.setItem('freightpulse_accent', accent);
-  }, [mode, accent, mounted]);
+  }, [mode, mounted]);
 
   const setMode = (newMode: Mode) => {
     setModeState(newMode);
   };
 
-  const setAccent = (newAccent: AccentColor) => {
-    setAccentState(newAccent);
-  };
-
   const toggleMode = () => {
-    setModeState(prev => prev === 'dark' ? 'light' : 'dark');
+    setModeState(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   return (
-    <ThemeContext.Provider value={{ mode, accent, setMode, setAccent, toggleMode }}>
+    <ThemeContext.Provider value={{ mode, toggleMode, setMode }}>
       {children}
     </ThemeContext.Provider>
   );
