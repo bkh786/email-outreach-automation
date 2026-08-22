@@ -1,0 +1,6 @@
+# User-agent rules
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://freightpulse.ai/sitemap.xml
