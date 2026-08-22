@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+export async function GET() {
+  const systemKey = process.env.GEMINI_API_KEY;
+  const isConfigured = Boolean(systemKey && systemKey.trim().length > 5);
+
+  return NextResponse.json({
+    configured: isConfigured,
+    model: 'gemini-1.5-flash',
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { apiKey } = await req.json();

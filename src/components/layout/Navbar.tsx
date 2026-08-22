@@ -1,11 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   Sparkles, 
   Plus, 
-  RefreshCw 
+  RefreshCw,
+  AlertCircle,
+  Building2,
+  User
 } from 'lucide-react';
 import { useApp } from '@/lib/store/app-context';
 import ThemeSelector from './ThemeSelector';
@@ -13,6 +17,8 @@ import ThemeSelector from './ThemeSelector';
 export default function Navbar() {
   const router = useRouter();
   const { 
+    profile,
+    currentUserEmail,
     userConfig, 
     leads, 
     enrichBatchLeads, 
@@ -20,27 +26,88 @@ export default function Navbar() {
     refreshData 
   } = useApp();
 
+  const [geminiStatus, setGeminiStatus] = useState<'checking' | 'active' | 'missing'>('checking');
+
+  useEffect(() => {
+    const checkGeminiStatus = async () => {
+      if (userConfig.gemini_api_key && userConfig.gemini_api_key.trim().length > 5) {
+        setGeminiStatus('active');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/test-gemini');
+        const data = await res.json();
+        if (data.configured) {
+          setGeminiStatus('active');
+        } else {
+          setGeminiStatus('missing');
+        }
+      } catch {
+        setGeminiStatus('missing');
+      }
+    };
+
+    checkGeminiStatus();
+  }, [userConfig.gemini_api_key]);
+
+  const isSuperAdmin = 
+    profile.role === 'super_admin' || 
+    profile.role === 'admin' || 
+    currentUserEmail === 'bkh786@gmail.com' || 
+    currentUserEmail === 'admin@freightpulse.ai' || 
+    currentUserEmail === 'admin@marketpulse.ai';
+
   const pendingLeads = leads.filter(l => l.status === 'pending');
+
+  const displayName = profile.company_name && profile.company_name !== 'Freight Forwarding Agency'
+    ? profile.company_name 
+    : (currentUserEmail ? currentUserEmail.split('@')[0] : 'Workspace');
+
+  const contactSubtitle = profile.contact_person
+    ? `${profile.contact_person} • ${currentUserEmail || ''}`
+    : (currentUserEmail || 'Autonomous Lead Intelligence & Cold Outreach');
 
   return (
     <header className="h-18 bg-white/95 dark:bg-[#0B1120]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
-      {/* Left: Email Outreach Automation Title & Gemini Connection Status */}
+      {/* Left: Company Name, Role Badge, Contact Person, & Accurate Gemini Status */}
       <div className="flex items-center gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-              Email Outreach Automation
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <span>{displayName}</span>
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-teal-100 dark:bg-cyan-500/20 text-teal-800 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30">
+                {isSuperAdmin ? 'Super Admin' : 'Client'}
+              </span>
             </h1>
 
-            {/* Gemini Live Connection Status */}
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 dark:bg-cyan-500/10 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/20">
-              <Sparkles className="w-3 h-3 text-teal-600 dark:text-cyan-400" />
-              <span>{userConfig.gemini_api_key ? 'Gemini 1.5 Flash (BYOK Active)' : 'Gemini 1.5 Live'}</span>
-            </span>
+            {/* Accurate Real-Time Gemini Connection Status */}
+            {geminiStatus === 'active' ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span>{userConfig.gemini_api_key ? 'Gemini 1.5 (BYOK Active)' : 'Gemini 1.5 Active'}</span>
+              </span>
+            ) : geminiStatus === 'missing' ? (
+              <Link
+                href="/settings"
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors"
+                title="Configure Gemini API Key in Settings"
+              >
+                <AlertCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                <span>Gemini Key Missing</span>
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse" />
+                <span>Checking AI...</span>
+              </span>
+            )}
           </div>
 
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-            Multi-Tenant Lead Research & Cold Outreach Platform
+          {/* Subtitle: Contact Person / Client Email */}
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate max-w-[320px] sm:max-w-none">
+            {contactSubtitle}
           </p>
         </div>
       </div>

@@ -5,6 +5,7 @@ export type EventType = 'uploaded' | 'researched' | 'drafted' | 'sent' | 'bounce
 export interface Profile {
   id: string;
   company_name: string;
+  contact_person?: string;
   website_url?: string;
   role?: 'super_admin' | 'admin' | 'client';
   services_offered: string[];
