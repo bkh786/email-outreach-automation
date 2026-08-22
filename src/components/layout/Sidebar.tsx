@@ -46,6 +46,13 @@ export default function Sidebar() {
       badge: null,
     },
     {
+      name: 'Client Tenants (Admin)',
+      href: '/admin/tenants',
+      icon: Database,
+      badge: 'Super Admin',
+      badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+    },
+    {
       name: 'Settings & BYOK',
       href: '/settings',
       icon: Settings,

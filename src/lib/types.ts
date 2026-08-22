@@ -6,12 +6,29 @@ export interface Profile {
   id: string;
   company_name: string;
   website_url?: string;
+  role?: 'super_admin' | 'admin' | 'client';
   services_offered: string[];
   target_markets: string[];
   unique_selling_proposition: string;
   strengths_and_certifications: string;
   email_signature: string;
   updated_at?: string;
+}
+
+export interface Tenant {
+  id: string;
+  email: string;
+  company_name: string;
+  role: 'super_admin' | 'admin' | 'client';
+  created_at: string;
+  last_sign_in_at?: string;
+  stats: {
+    total: number;
+    sent: number;
+    pending: number;
+  };
+  services_offered?: string[];
+  target_markets?: string[];
 }
 
 export interface UserConfig {
