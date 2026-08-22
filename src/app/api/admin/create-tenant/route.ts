@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     const { error: profileError } = await supabase.from('profiles').upsert({
       id: userId,
       company_name,
+      contact_person: contact_person || '',
       role: 'client',
       services_offered: services_offered || ['Air Freight Expedited', 'Ocean FCL/LCL', 'Customs Clearance'],
       target_markets: target_markets || ['USA', 'Europe', 'Asia'],

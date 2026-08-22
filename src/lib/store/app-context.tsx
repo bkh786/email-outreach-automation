@@ -7,6 +7,7 @@ import { isSupabaseConfigured, createClient } from '@/lib/supabase/client';
 const DEFAULT_PROFILE: Profile = {
   id: 'master-profile',
   company_name: 'Freight Forwarding Agency',
+  contact_person: 'Operations Lead',
   website_url: '',
   role: 'client',
   services_offered: [
@@ -105,6 +106,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             user.email === 'admin@marketpulse.ai' ||
             user.user_metadata?.role === 'super_admin';
 
+          // Extract company name and contact person from user metadata or email domain
+          const metaCompanyName = user.user_metadata?.company_name || '';
+          const metaContactPerson = user.user_metadata?.full_name || user.user_metadata?.contact_person || '';
+
+          let domainCompanyFallback = '';
+          if (user.email && user.email.includes('@')) {
+            const domainPart = user.email.split('@')[1].split('.')[0];
+            if (domainPart && !['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud'].includes(domainPart.toLowerCase())) {
+              domainCompanyFallback = domainPart
+                .replace(/[-_]/g, ' ')
+                .replace(/\b\w/g, (c: string) => c.toUpperCase());
+            }
+          }
+
           // Fetch profile from database
           const { data: profileData } = await supabase
             .from('profiles')
@@ -112,24 +127,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             .eq('id', user.id)
             .single();
 
-          if (profileData) {
-            const resolvedRole = isSuperAdminEmail ? 'super_admin' : (profileData.role || 'client');
-            const resolvedProfile: Profile = {
-              ...DEFAULT_PROFILE,
-              ...profileData,
-              role: resolvedRole,
-            };
-            setProfile(resolvedProfile);
-            localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
-          } else {
-            const resolvedRole = isSuperAdminEmail ? 'super_admin' : 'client';
-            const resolvedProfile: Profile = {
-              ...DEFAULT_PROFILE,
-              role: resolvedRole,
-            };
-            setProfile(resolvedProfile);
-            localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
-          }
+          const finalCompanyName = 
+            profileData?.company_name || 
+            metaCompanyName || 
+            domainCompanyFallback || 
+            (isSuperAdminEmail ? 'Super Admin Portal' : 'Logistics Company');
+
+          const finalContactPerson = 
+            profileData?.contact_person || 
+            metaContactPerson || 
+            (user.email ? user.email.split('@')[0].replace(/\b\w/g, (c: string) => c.toUpperCase()) : 'Operations Contact');
+
+          const resolvedRole = isSuperAdminEmail ? 'super_admin' : (profileData?.role || user.user_metadata?.role || 'client');
+
+          const resolvedProfile: Profile = {
+            ...DEFAULT_PROFILE,
+            ...(profileData || {}),
+            company_name: finalCompanyName,
+            contact_person: finalContactPerson,
+            role: resolvedRole,
+          };
+          setProfile(resolvedProfile);
+          localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
 
           // Fetch real user config
           const { data: configData } = await supabase
@@ -446,6 +465,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           await supabase.from('profiles').upsert({
             id: user.id,
             company_name: newProfile.company_name,
+            contact_person: newProfile.contact_person,
             website_url: newProfile.website_url,
             services_offered: newProfile.services_offered,
             target_markets: newProfile.target_markets,

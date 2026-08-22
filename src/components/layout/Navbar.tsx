@@ -7,9 +7,7 @@ import {
   Sparkles, 
   Plus, 
   RefreshCw,
-  AlertCircle,
-  Building2,
-  User
+  AlertCircle
 } from 'lucide-react';
 import { useApp } from '@/lib/store/app-context';
 import ThemeSelector from './ThemeSelector';
@@ -60,22 +58,44 @@ export default function Navbar() {
 
   const pendingLeads = leads.filter(l => l.status === 'pending');
 
-  const displayName = profile.company_name && profile.company_name !== 'Freight Forwarding Agency'
-    ? profile.company_name 
-    : (currentUserEmail ? currentUserEmail.split('@')[0] : 'Workspace');
+  // 1. Resolve Company Name (Primary Title)
+  let companyTitle = profile.company_name;
+  if (!companyTitle || companyTitle === 'Freight Forwarding Agency' || companyTitle === 'Logistics Company') {
+    if (currentUserEmail && currentUserEmail.includes('@')) {
+      const domainPart = currentUserEmail.split('@')[1]?.split('.')[0];
+      if (domainPart && !['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud'].includes(domainPart.toLowerCase())) {
+        companyTitle = domainPart
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, (c: string) => c.toUpperCase());
+      } else {
+        companyTitle = isSuperAdmin ? 'Master Platform' : 'Logistics Agency';
+      }
+    } else {
+      companyTitle = isSuperAdmin ? 'Master Platform' : 'Logistics Agency';
+    }
+  }
 
-  const contactSubtitle = profile.contact_person
-    ? `${profile.contact_person} • ${currentUserEmail || ''}`
-    : (currentUserEmail || 'Autonomous Lead Intelligence & Cold Outreach');
+  // 2. Resolve Contact Person Name (Subtitle Only - No Email)
+  let contactSubtitle = profile.contact_person;
+  if (!contactSubtitle || contactSubtitle === 'Operations Lead' || contactSubtitle === 'Operations Contact') {
+    if (currentUserEmail && currentUserEmail.includes('@')) {
+      const localPart = currentUserEmail.split('@')[0];
+      contactSubtitle = localPart
+        .replace(/[-_.]/g, ' ')
+        .replace(/\b\w/g, (c: string) => c.toUpperCase());
+    } else {
+      contactSubtitle = isSuperAdmin ? 'Super Administrator' : 'Client Representative';
+    }
+  }
 
   return (
     <header className="h-18 bg-white/95 dark:bg-[#0B1120]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
-      {/* Left: Company Name, Role Badge, Contact Person, & Accurate Gemini Status */}
+      {/* Left: Company Name & Contact Person Name Only */}
       <div className="flex items-center gap-4">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              <span>{displayName}</span>
+              <span>{companyTitle}</span>
               <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-teal-100 dark:bg-cyan-500/20 text-teal-800 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30">
                 {isSuperAdmin ? 'Super Admin' : 'Client'}
               </span>
@@ -105,8 +125,8 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Subtitle: Contact Person / Client Email */}
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate max-w-[320px] sm:max-w-none">
+          {/* Subtitle: Contact Person Name Only */}
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             {contactSubtitle}
           </p>
         </div>
