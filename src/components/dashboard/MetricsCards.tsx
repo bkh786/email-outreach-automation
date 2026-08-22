@@ -6,74 +6,54 @@ import {
   Sparkles, 
   Send, 
   TrendingUp, 
-  CheckCircle2, 
+  Layers, 
   Clock, 
-  ShieldAlert,
-  ArrowUpRight,
-  Zap
+  Flame, 
+  Target 
 } from 'lucide-react';
 import { useApp } from '@/lib/store/app-context';
 
 export default function MetricsCards() {
-  const { leads, logs } = useApp();
+  const { leads } = useApp();
 
   const totalLeads = leads.length;
   const enrichedAndDrafted = leads.filter(l => l.status === 'drafted' || l.status === 'approved' || l.status === 'sent').length;
-  const sentToday = leads.filter(l => l.status === 'sent').length;
+  const highPriority = leads.filter(l => l.status === 'drafted' || l.status === 'approved').length;
+  const sentCount = leads.filter(l => l.status === 'sent').length;
   const pendingCount = leads.filter(l => l.status === 'pending').length;
-
-  const enrichmentRate = totalLeads > 0 
-    ? Math.round((enrichedAndDrafted / totalLeads) * 100) 
-    : 0;
-
-  const conversionRate = totalLeads > 0 
-    ? Math.round((sentToday / totalLeads) * 100) 
-    : 0;
 
   const metrics = [
     {
-      title: 'Total Ingested Leads',
-      value: totalLeads.toLocaleString(),
-      subtitle: `${pendingCount} awaiting AI research`,
-      icon: Users,
-      color: 'from-cyan-500 to-blue-600',
-      textColor: 'text-cyan-400',
-      bgColor: 'bg-cyan-500/10',
-      borderColor: 'border-cyan-500/20',
-      growth: '+24% this week',
+      title: 'BRANDS / LEADS TRACKED',
+      value: totalLeads.toString(),
+      subtitle: `${totalLeads} active forwarder accounts`,
+      icon: Layers,
+      iconBg: 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-200/60 dark:border-teal-500/20',
+      numColor: 'text-slate-900 dark:text-white',
     },
     {
-      title: 'AI Enriched & Drafted',
-      value: enrichedAndDrafted.toLocaleString(),
-      subtitle: `${enrichmentRate}% pipeline coverage`,
+      title: 'OPEN OPPORTUNITIES',
+      value: (enrichedAndDrafted || 0).toString(),
+      subtitle: `${enrichedAndDrafted} scored freight pitches`,
       icon: Sparkles,
-      color: 'from-amber-400 to-orange-500',
-      textColor: 'text-amber-400',
-      bgColor: 'bg-amber-500/10',
-      borderColor: 'border-amber-500/20',
-      growth: 'Gemini 1.5 Flash',
+      iconBg: 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-cyan-400 border border-sky-200/60 dark:border-sky-500/20',
+      numColor: 'text-sky-600 dark:text-cyan-400',
     },
     {
-      title: 'Outreach Dispatched',
-      value: sentToday.toLocaleString(),
-      subtitle: 'Zero bounce rate recorded',
+      title: 'HIGH PRIORITY (4-5)',
+      value: (highPriority || 0).toString(),
+      subtitle: 'Immediate outreach ready',
+      icon: Flame,
+      iconBg: 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-500/20',
+      numColor: 'text-rose-600 dark:text-rose-400',
+    },
+    {
+      title: 'OUTREACH DISPATCHED',
+      value: (sentCount || 0).toString(),
+      subtitle: `${pendingCount} awaiting research`,
       icon: Send,
-      color: 'from-emerald-400 to-teal-600',
-      textColor: 'text-emerald-400',
-      bgColor: 'bg-emerald-500/10',
-      borderColor: 'border-emerald-500/20',
-      growth: '+100% deliverability',
-    },
-    {
-      title: 'Corridor Outreach Score',
-      value: `${totalLeads > 0 ? (94.8).toFixed(1) : 0}%`,
-      subtitle: 'Based on brand USP match',
-      icon: TrendingUp,
-      color: 'from-purple-500 to-indigo-600',
-      textColor: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
-      borderColor: 'border-purple-500/20',
-      growth: 'High Synergy',
+      iconBg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/20',
+      numColor: 'text-emerald-600 dark:text-emerald-400',
     },
   ];
 
@@ -84,33 +64,25 @@ export default function MetricsCards() {
         return (
           <div
             key={i}
-            className={`relative overflow-hidden rounded-2xl p-5 bg-[#0F172A]/80 border ${metric.borderColor} shadow-lg shadow-black/20 hover:border-slate-700 transition-all duration-300 group`}
+            className="rounded-2xl p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
           >
-            {/* Ambient subtle glow */}
-            <div className={`absolute top-0 right-0 w-28 h-28 rounded-full ${metric.bgColor} blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500`} />
-
-            <div className="flex items-center justify-between mb-3 relative z-10">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 tracking-wider uppercase">
                 {metric.title}
               </span>
-              <div className={`w-9 h-9 rounded-xl ${metric.bgColor} ${metric.textColor} flex items-center justify-center border border-white/5`}>
+              <div className={`w-8 h-8 rounded-xl ${metric.iconBg} flex items-center justify-center flex-shrink-0`}>
                 <Icon className="w-4 h-4" />
               </div>
             </div>
 
-            <div className="flex items-baseline gap-2 mb-1 relative z-10">
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <div className="my-1">
+              <h3 className={`text-3xl font-black tracking-tight ${metric.numColor}`}>
                 {metric.value}
               </h3>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs relative z-10">
-              <span className="text-slate-400 font-medium truncate max-w-[140px]">
-                {metric.subtitle}
-              </span>
-              <span className={`font-semibold flex items-center gap-0.5 ${metric.textColor}`}>
-                {metric.growth}
-              </span>
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              {metric.subtitle}
             </div>
           </div>
         );

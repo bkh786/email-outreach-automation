@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppProvider } from '@/lib/store/app-context';
+import { ThemeProvider } from '@/lib/store/theme-context';
 import AppShell from '@/components/layout/AppShell';
 
 export const metadata: Metadata = {
@@ -15,13 +16,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-[#070B14] min-h-screen text-slate-100 antialiased">
-        <AppProvider>
-          <AppShell>
-            {children}
-          </AppShell>
-        </AppProvider>
+    <html lang="en" className="light" suppressHydrationWarning>
+      <body className="min-h-screen antialiased">
+        <ThemeProvider>
+          <AppProvider>
+            <AppShell>
+              {children}
+            </AppShell>
+          </AppProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
