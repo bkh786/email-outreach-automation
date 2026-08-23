@@ -64,21 +64,59 @@ Return ONLY valid JSON matching this exact structure.
 `;
 
   try {
-    const genAI = new GoogleGenerativeAI(cleanedKey);
+    // Attempt REST fetch first across v1beta and v1
+    for (const modelName of CANDIDATE_MODELS) {
+      const cleanModelName = modelName.replace(/^models\//, '');
+      for (const apiVer of ['v1beta', 'v1']) {
+        try {
+          const restRes = await fetch(
+            `https://generativelanguage.googleapis.com/${apiVer}/models/${cleanModelName}:generateContent?key=${cleanedKey}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': cleanedKey,
+              },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+              }),
+            }
+          );
 
-    // Try candidate models sequentially
+          if (restRes.ok) {
+            const restData = await restRes.json();
+            let replyText = restData.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (replyText) {
+              // Strip code fences if model wrapped in ```json ... ```
+              replyText = replyText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+              const parsed = JSON.parse(replyText) as AiEnrichmentResult;
+              if (parsed.email_subject && parsed.email_body) {
+                return {
+                  company_profile: parsed.company_profile || `${lead.company_name} logistics partner profile.`,
+                  financial_info: parsed.financial_info || 'Commercial freight volume.',
+                  email_subject: parsed.email_subject,
+                  email_body: parsed.email_body,
+                };
+              }
+            }
+          }
+        } catch {
+          // continue
+        }
+      }
+    }
+
+    // Secondary attempt: GoogleGenerativeAI SDK
+    const genAI = new GoogleGenerativeAI(cleanedKey);
     for (const modelName of CANDIDATE_MODELS) {
       try {
         const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.7,
-          },
+          model: modelName.replace(/^models\//, ''),
         });
 
         const response = await model.generateContent(prompt);
-        const text = response.response.text();
+        let text = response.response.text();
+        text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
         const parsed = JSON.parse(text) as AiEnrichmentResult;
 
         if (parsed.email_subject && parsed.email_body) {
@@ -89,44 +127,8 @@ Return ONLY valid JSON matching this exact structure.
             email_body: parsed.email_body,
           };
         }
-      } catch (innerErr: any) {
-        if (innerErr.message?.includes('404') || innerErr.message?.includes('not found')) {
-          continue;
-        }
-        console.warn(`Model ${modelName} failed:`, innerErr.message);
-      }
-    }
-
-    // Fallback: Direct REST API call if SDK candidate iteration failed
-    for (const modelName of CANDIDATE_MODELS) {
-      try {
-        const restRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanedKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { responseMimeType: 'application/json' }
-            })
-          }
-        );
-
-        if (restRes.ok) {
-          const restData = await restRes.json();
-          const replyText = restData.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (replyText) {
-            const parsed = JSON.parse(replyText) as AiEnrichmentResult;
-            return {
-              company_profile: parsed.company_profile || `${lead.company_name} logistics partner profile.`,
-              financial_info: parsed.financial_info || 'Commercial freight volume.',
-              email_subject: parsed.email_subject || `Trade lane synergy for ${lead.company_name}`,
-              email_body: parsed.email_body || `Hi ${lead.contact_person || 'there'},\n\nBest regards,`,
-            };
-          }
-        }
       } catch {
-        // continue
+        continue;
       }
     }
 

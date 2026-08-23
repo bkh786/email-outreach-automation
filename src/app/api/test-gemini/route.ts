@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const CANDIDATE_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-exp',
-  'gemini-1.5-pro',
-  'gemini-1.5-pro-latest',
-  'gemini-pro'
-];
-
 export async function GET() {
   const systemKey = process.env.GEMINI_API_KEY;
   const isConfigured = Boolean(systemKey && systemKey.trim().length > 5);
@@ -33,51 +23,78 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Clean key of leading/trailing whitespace or accidental quotes
     const cleanedKey = rawKey.trim().replace(/^['"]|['"]$/g, '');
 
-    let lastError: any = null;
-    let successfulModel: string | null = null;
-    let responseSnippet = '';
+    // Step 1: Query Google Generative Language API ListModels endpoint to verify key & discover available models
+    let availableModels: string[] = [];
+    let listModelsError: string | null = null;
 
-    const genAI = new GoogleGenerativeAI(cleanedKey);
-
-    // Try each model candidate until one succeeds
-    for (const modelName of CANDIDATE_MODELS) {
+    for (const apiVersion of ['v1beta', 'v1']) {
       try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent('Respond with only the word "OK".');
-        const text = result.response.text().trim();
-        if (text) {
-          successfulModel = modelName;
-          responseSnippet = text;
-          break;
+        const listRes = await fetch(
+          `https://generativelanguage.googleapis.com/${apiVersion}/models?key=${cleanedKey}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': cleanedKey,
+            },
+          }
+        );
+
+        if (listRes.ok) {
+          const data = await listRes.json();
+          if (Array.isArray(data.models)) {
+            const contentModels = data.models
+              .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+              .map((m: any) => m.name.replace(/^models\//, ''));
+            if (contentModels.length > 0) {
+              availableModels = contentModels;
+              break;
+            }
+          }
+        } else {
+          const errData = await listRes.json().catch(() => ({}));
+          listModelsError = errData.error?.message || `HTTP ${listRes.status}: ${listRes.statusText}`;
         }
-      } catch (err: any) {
-        lastError = err;
-        // If it's a 404 (model not found on this API version), continue to next candidate model
-        if (err.message?.includes('404') || err.message?.includes('not found')) {
-          continue;
-        }
-        // If it's an invalid API key, stop early
-        if (err.message?.includes('API_KEY_INVALID') || err.message?.includes('400')) {
-          break;
-        }
+      } catch (e: any) {
+        listModelsError = e.message;
       }
     }
 
-    // If SDK attempts failed with 404, attempt direct REST fetch fallback
-    if (!successfulModel) {
-      for (const modelName of CANDIDATE_MODELS) {
+    // Default fallback candidate models if listModels endpoint did not return
+    const candidateList = availableModels.length > 0 
+      ? availableModels 
+      : [
+          'gemini-1.5-flash',
+          'gemini-1.5-flash-latest',
+          'gemini-2.0-flash',
+          'gemini-2.0-flash-exp',
+          'gemini-1.5-pro',
+          'gemini-1.5-pro-latest',
+          'gemini-pro'
+        ];
+
+    let successfulModel: string | null = null;
+    let responseSnippet = '';
+    let lastExecError: string | null = null;
+
+    // Step 2: Try direct REST generateContent across candidates
+    for (const modelName of candidateList) {
+      const cleanModelName = modelName.replace(/^models\//, '');
+      for (const apiVer of ['v1beta', 'v1']) {
         try {
           const restRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanedKey}`,
+            `https://generativelanguage.googleapis.com/${apiVer}/models/${cleanModelName}:generateContent?key=${cleanedKey}`,
             {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': cleanedKey,
+              },
               body: JSON.stringify({
-                contents: [{ parts: [{ text: 'Respond with OK' }] }]
-              })
+                contents: [{ parts: [{ text: 'Respond with OK' }] }],
+              }),
             }
           );
 
@@ -85,14 +102,42 @@ export async function POST(req: NextRequest) {
             const restData = await restRes.json();
             const reply = restData.candidates?.[0]?.content?.parts?.[0]?.text;
             if (reply) {
-              successfulModel = modelName;
+              successfulModel = cleanModelName;
               responseSnippet = reply.trim();
               break;
             }
+          } else {
+            const errData = await restRes.json().catch(() => ({}));
+            lastExecError = errData.error?.message || `HTTP ${restRes.status}`;
           }
-        } catch {
-          // continue
+        } catch (err: any) {
+          lastExecError = err.message;
         }
+      }
+
+      if (successfulModel) break;
+    }
+
+    // Step 3: Try GoogleGenerativeAI SDK as secondary fallback
+    if (!successfulModel) {
+      try {
+        const genAI = new GoogleGenerativeAI(cleanedKey);
+        for (const modelName of candidateList) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName.replace(/^models\//, '') });
+            const result = await model.generateContent('Respond with OK');
+            const text = result.response.text().trim();
+            if (text) {
+              successfulModel = modelName;
+              responseSnippet = text;
+              break;
+            }
+          } catch (sdkErr: any) {
+            lastExecError = sdkErr.message;
+          }
+        }
+      } catch (e: any) {
+        lastExecError = e.message;
       }
     }
 
@@ -105,10 +150,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const errorMessage = lastError?.message || 'Failed to authenticate with Google Gemini API. Please ensure your API key from Google AI Studio (aistudio.google.com) is valid and has Generative Language API access enabled.';
+    // If failed, return clear troubleshooting details
+    const detailedError = listModelsError || lastExecError || 'Gemini API authentication failed. Please generate a new free key at https://aistudio.google.com/app/apikey.';
 
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { 
+        success: false, 
+        error: `Gemini API Authentication Error: ${detailedError}. Please verify that your key is created from Google AI Studio (https://aistudio.google.com) and has Generative Language API enabled.` 
+      },
       { status: 400 }
     );
   } catch (error: any) {
