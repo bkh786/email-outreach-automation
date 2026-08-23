@@ -1,31 +1,31 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Lead, Profile, ScrapedData, AiEnrichmentResult } from './types';
 
+const CANDIDATE_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-exp',
+  'gemini-1.5-pro',
+  'gemini-1.5-pro-latest',
+  'gemini-pro'
+];
+
 export async function enrichLeadWithGemini(
   lead: Partial<Lead>,
   scrapedData: ScrapedData | null,
   userProfile: Partial<Profile>,
   apiKey?: string
 ): Promise<AiEnrichmentResult> {
-  const activeKey = apiKey || process.env.GEMINI_API_KEY;
+  const rawKey = apiKey || process.env.GEMINI_API_KEY;
 
-  if (!activeKey) {
-    // If no key is set, generate a high-quality contextual simulation
+  if (!rawKey || rawKey.trim() === '') {
     return generateFallbackEnrichment(lead, scrapedData, userProfile);
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(activeKey);
-    // Use gemini-1.5-flash for high speed, low cost, and reliable structured JSON output
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.7,
-      },
-    });
+  const cleanedKey = rawKey.trim().replace(/^['"]|['"]$/g, '');
 
-    const prompt = `
+  const prompt = `
 You are an expert enterprise B2B cold outreach copywriter and freight forwarding business development executive.
 Your objective is to analyze a prospective logistics/importer/exporter client and synthesize a highly personalized, compelling, non-generic cold outreach email from the sender's freight forwarding agency.
 
@@ -52,7 +52,7 @@ ${scrapedData?.bodyText ? scrapedData.bodyText.substring(0, 2000) : 'No website 
 """
 
 ### TASK:
-Analyze the lead's operational focus and produce a structured JSON response matching the following TypeScript schema:
+Analyze the lead's operational focus and produce a structured JSON response matching the following schema:
 {
   "company_profile": "2-3 concise sentences summarizing what this prospect does, their operational scope, and their primary logistics footprint.",
   "financial_info": "Observable scale indicators (e.g. estimated office count, fleet/warehouse presence, trade volume scale, or tier bracket).",
@@ -63,16 +63,74 @@ Analyze the lead's operational focus and produce a structured JSON response matc
 Return ONLY valid JSON matching this exact structure.
 `;
 
-    const response = await model.generateContent(prompt);
-    const text = response.response.text();
-    const parsed = JSON.parse(text) as AiEnrichmentResult;
+  try {
+    const genAI = new GoogleGenerativeAI(cleanedKey);
 
-    return {
-      company_profile: parsed.company_profile || `${lead.company_name} is an international freight and trade organization.`,
-      financial_info: parsed.financial_info || 'Mid-market freight volume with regional multi-modal distribution footprint.',
-      email_subject: parsed.email_subject || `Collaboration on freight lane solutions for ${lead.company_name}`,
-      email_body: parsed.email_body || `Hi ${lead.contact_person || 'there'},\n\nI noticed ${lead.company_name}'s footprint and wanted to explore mutual trade lane synergies.\n\nBest regards,`,
-    };
+    // Try candidate models sequentially
+    for (const modelName of CANDIDATE_MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.7,
+          },
+        });
+
+        const response = await model.generateContent(prompt);
+        const text = response.response.text();
+        const parsed = JSON.parse(text) as AiEnrichmentResult;
+
+        if (parsed.email_subject && parsed.email_body) {
+          return {
+            company_profile: parsed.company_profile || `${lead.company_name} is an international freight and trade organization.`,
+            financial_info: parsed.financial_info || 'Mid-market freight volume with regional multi-modal distribution footprint.',
+            email_subject: parsed.email_subject,
+            email_body: parsed.email_body,
+          };
+        }
+      } catch (innerErr: any) {
+        if (innerErr.message?.includes('404') || innerErr.message?.includes('not found')) {
+          continue;
+        }
+        console.warn(`Model ${modelName} failed:`, innerErr.message);
+      }
+    }
+
+    // Fallback: Direct REST API call if SDK candidate iteration failed
+    for (const modelName of CANDIDATE_MODELS) {
+      try {
+        const restRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanedKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json' }
+            })
+          }
+        );
+
+        if (restRes.ok) {
+          const restData = await restRes.json();
+          const replyText = restData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (replyText) {
+            const parsed = JSON.parse(replyText) as AiEnrichmentResult;
+            return {
+              company_profile: parsed.company_profile || `${lead.company_name} logistics partner profile.`,
+              financial_info: parsed.financial_info || 'Commercial freight volume.',
+              email_subject: parsed.email_subject || `Trade lane synergy for ${lead.company_name}`,
+              email_body: parsed.email_body || `Hi ${lead.contact_person || 'there'},\n\nBest regards,`,
+            };
+          }
+        }
+      } catch {
+        // continue
+      }
+    }
+
+    return generateFallbackEnrichment(lead, scrapedData, userProfile);
   } catch (err: any) {
     console.warn('Gemini API call failed, falling back to smart dynamic generator:', err.message);
     return generateFallbackEnrichment(lead, scrapedData, userProfile);

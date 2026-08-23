@@ -44,14 +44,24 @@ export default function SettingsPage() {
   };
 
   const handleTestGeminiKey = async () => {
+    if (!formData.gemini_api_key || formData.gemini_api_key.trim() === '') {
+      setGeminiTestResult({
+        success: false,
+        message: 'Please paste your Google Gemini API key first.',
+      });
+      return;
+    }
+
     setIsTestingGemini(true);
     setGeminiTestResult(null);
+
+    const cleanedKey = formData.gemini_api_key.trim().replace(/^['"]|['"]$/g, '');
 
     try {
       const response = await fetch('/api/test-gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: formData.gemini_api_key }),
+        body: JSON.stringify({ apiKey: cleanedKey }),
       });
 
       const data = await response.json();
@@ -59,6 +69,10 @@ export default function SettingsPage() {
         success: data.success,
         message: data.message || data.error,
       });
+
+      if (data.success) {
+        await updateUserConfig({ ...userConfig, gemini_api_key: cleanedKey });
+      }
     } catch (err: any) {
       setGeminiTestResult({
         success: false,
