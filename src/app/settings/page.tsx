@@ -170,7 +170,9 @@ export default function SettingsPage() {
 
       if (data.success) {
         // Automatically save verified key to Supabase database & context
-        await updateUserConfig({ ...formData, gemini_api_key: cleanedKey });
+        const updated = { ...formData, gemini_api_key: cleanedKey };
+        setFormData(updated);
+        await updateUserConfig(updated);
       }
     } catch (err: any) {
       setGeminiTestResult({

@@ -158,7 +158,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setProfile(resolvedProfile);
           localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
 
-          // Fetch real user config
+          // Fetch real user config from Supabase
           const { data: configData } = await supabase
             .from('user_configs')
             .select('*')
@@ -171,14 +171,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
 
           // Fetch real leads for this user/tenant from Supabase
-          const { data: dbLeads, error: leadsError } = await supabase
+          const { data: dbLeads } = await supabase
             .from('leads')
             .select('*')
             .order('created_at', { ascending: false });
-
-          if (leadsError) {
-            console.warn('Leads fetch warning:', leadsError.message);
-          }
 
           if (dbLeads) {
             setLeads(dbLeads);
@@ -566,30 +562,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_config', JSON.stringify(newConfig));
     }
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from('user_configs').upsert({
-            id: user.id,
-            gemini_api_key: newConfig.gemini_api_key,
-            smtp_host: newConfig.smtp_host,
-            smtp_port: newConfig.smtp_port,
-            smtp_user: newConfig.smtp_user,
-            smtp_pass: newConfig.smtp_pass,
-            smtp_secure: newConfig.smtp_secure,
-            from_name: newConfig.from_name,
-            from_email: newConfig.from_email,
-            auto_send_enabled: newConfig.auto_send_enabled,
-            max_daily_emails: newConfig.max_daily_emails,
-            max_hourly_rate: newConfig.max_hourly_rate,
-            updated_at: new Date().toISOString(),
-          });
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const response = await fetch('/api/config/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config: newConfig,
+          userId: user?.id,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.config) {
+        setUserConfig(data.config);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('marketpulse_config', JSON.stringify(data.config));
         }
-      } catch (err) {
-        console.error('Error updating config in Supabase:', err);
       }
+    } catch (err) {
+      console.error('Error updating config in database:', err);
     }
   };
 
