@@ -18,7 +18,7 @@ export default function Footer() {
           rel="noopener noreferrer"
           className="font-bold text-teal-600 dark:text-cyan-400 hover:underline transition-colors"
         >
-          DigiPresence Solutions
+          Digi Presence Solutions
         </a>
 
         <span className="text-slate-300 dark:text-slate-700">|</span>

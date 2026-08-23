@@ -67,13 +67,13 @@ export default function Sidebar() {
       badgeColor: 'bg-teal-100 text-teal-800 dark:bg-cyan-500/20 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30',
       show: true,
     },
-    // Self Brand Profile: ONLY visible to Client role (NEVER super_admin)
+    // Self Brand Profile: Visible to everyone (both Client and Super Admin)
     {
       name: 'Self Brand Profile',
       href: '/brand',
       icon: Building2,
       badge: null,
-      show: isClient,
+      show: true,
     },
     // Super Admin Tenant Provisioning: ONLY visible to Super Admin
     {

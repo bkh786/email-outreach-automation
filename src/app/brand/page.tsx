@@ -175,33 +175,6 @@ export default function BrandProfilePage() {
 
   const isUrlEntered = Boolean(formData.website_url && formData.website_url.trim().length > 2);
 
-  if (isSuperAdmin) {
-    return (
-      <div className="space-y-6 pb-16">
-        <div className="rounded-3xl p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm text-center max-w-2xl mx-auto space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-cyan-500/10 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/20 flex items-center justify-center mx-auto">
-            <Database className="w-7 h-7" />
-          </div>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
-            Super Admin Portal
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            As a Super Admin, self-brand profiles are configured independently for each client tenant in the multi-tenant system. Manage or provision individual client tenant brand profiles under <strong>Client Tenants (Admin)</strong>.
-          </p>
-          <div className="pt-2">
-            <Link
-              href="/admin/tenants"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 font-bold text-xs shadow-md shadow-teal-600/20 dark:shadow-cyan-500/20 transition-all"
-            >
-              <span>Go to Client Tenants (Admin)</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 pb-16">
       {/* Header */}
@@ -291,7 +264,7 @@ export default function BrandProfilePage() {
                   required
                   value={formData.company_name}
                   onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                  placeholder="e.g. DigiPresence Solutions"
+                  placeholder="e.g. Digi Presence Solutions"
                   className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
                 />
               </div>
@@ -305,7 +278,7 @@ export default function BrandProfilePage() {
                     type="text"
                     value={formData.website_url || ''}
                     onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
-                    placeholder="https://digipresencesolutions.com/"
+                    placeholder="https://digipresence.in/"
                     className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
                   />
                 </div>

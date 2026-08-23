@@ -125,7 +125,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
 
           const resolvedRole = isSuperAdminEmail ? 'super_admin' : (user.user_metadata?.role || 'client');
-          const finalCompanyName = metaCompanyName || domainCompanyFallback || (isSuperAdminEmail ? 'MarketPulse Master Platform' : 'Logistics Agency');
+          const finalCompanyName = metaCompanyName || domainCompanyFallback || (isSuperAdminEmail ? 'Digi Presence Solutions' : 'Business Solutions');
           const finalContactPerson = metaContactPerson || (user.email ? user.email.split('@')[0].replace(/\b\w/g, (c: string) => c.toUpperCase()) : 'Operations Contact');
 
           // 1. Fetch profile from database via dedicated server API
