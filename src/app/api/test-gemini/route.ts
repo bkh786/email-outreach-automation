@@ -1,9 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const systemKey = process.env.GEMINI_API_KEY;
-  const isConfigured = Boolean(systemKey && systemKey.trim().length > 5);
+  let isConfigured = false;
+  let userApiKey: string | null = null;
+
+  try {
+    const serverSupabase = createServerSupabaseClient();
+    const { data: { user } } = await serverSupabase.auth.getUser();
+    if (user) {
+      const adminSupabase = createAdminClient();
+      const { data: config } = await adminSupabase
+        .from('user_configs')
+        .select('gemini_api_key')
+        .eq('id', user.id)
+        .single();
+      if (config?.gemini_api_key && config.gemini_api_key.trim().length > 5) {
+        isConfigured = true;
+        userApiKey = config.gemini_api_key;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  if (!isConfigured) {
+    const systemKey = process.env.GEMINI_API_KEY;
+    if (systemKey && systemKey.trim().length > 5) {
+      isConfigured = true;
+    }
+  }
 
   return NextResponse.json({
     configured: isConfigured,
@@ -14,7 +44,31 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { apiKey } = await req.json();
-    const rawKey = apiKey || process.env.GEMINI_API_KEY;
+    let rawKey = apiKey;
+
+    if (!rawKey || typeof rawKey !== 'string' || rawKey.trim() === '') {
+      try {
+        const serverSupabase = createServerSupabaseClient();
+        const { data: { user } } = await serverSupabase.auth.getUser();
+        if (user) {
+          const adminSupabase = createAdminClient();
+          const { data: config } = await adminSupabase
+            .from('user_configs')
+            .select('gemini_api_key')
+            .eq('id', user.id)
+            .single();
+          if (config?.gemini_api_key) {
+            rawKey = config.gemini_api_key;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!rawKey) {
+      rawKey = process.env.GEMINI_API_KEY;
+    }
 
     if (!rawKey || typeof rawKey !== 'string' || rawKey.trim() === '') {
       return NextResponse.json(

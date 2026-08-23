@@ -154,16 +154,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setProfile(resolvedProfile);
           localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
 
-          // 2. Fetch real user config from Supabase database
-          const { data: configData } = await supabase
-            .from('user_configs')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-          if (configData) {
-            setUserConfig(configData);
-            localStorage.setItem('marketpulse_config', JSON.stringify(configData));
+          // 2. Fetch real user config from Supabase database via dedicated server API
+          try {
+            const configRes = await fetch(`/api/config/get?userId=${user.id}`);
+            const configJson = await configRes.json();
+            if (configJson.success && configJson.config) {
+              setUserConfig(configJson.config);
+              localStorage.setItem('marketpulse_config', JSON.stringify(configJson.config));
+            } else {
+              const { data: configData } = await supabase
+                .from('user_configs')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+              if (configData) {
+                setUserConfig(configData);
+                localStorage.setItem('marketpulse_config', JSON.stringify(configData));
+              }
+            }
+          } catch {
+            const { data: configData } = await supabase
+              .from('user_configs')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+            if (configData) {
+              setUserConfig(configData);
+              localStorage.setItem('marketpulse_config', JSON.stringify(configData));
+            }
           }
 
           // 3. Fetch real leads via dedicated server API
