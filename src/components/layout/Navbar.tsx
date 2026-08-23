@@ -58,7 +58,7 @@ export default function Navbar() {
 
   const pendingLeads = leads.filter(l => l.status === 'pending');
 
-  // 1. Resolve Company Name (Primary Title)
+  // 1. Resolve Company Name (Primary Title Only - No Role Badge)
   let companyTitle = profile.company_name;
   if (!companyTitle || companyTitle === 'Freight Forwarding Agency' || companyTitle === 'Logistics Company') {
     if (currentUserEmail && currentUserEmail.includes('@')) {
@@ -68,14 +68,14 @@ export default function Navbar() {
           .replace(/[-_]/g, ' ')
           .replace(/\b\w/g, (c: string) => c.toUpperCase());
       } else {
-        companyTitle = isSuperAdmin ? 'Master Platform' : 'Logistics Agency';
+        companyTitle = isSuperAdmin ? 'MarketPulse Master Platform' : 'Logistics Company';
       }
     } else {
-      companyTitle = isSuperAdmin ? 'Master Platform' : 'Logistics Agency';
+      companyTitle = isSuperAdmin ? 'MarketPulse Master Platform' : 'Logistics Company';
     }
   }
 
-  // 2. Resolve Contact Person Name (Subtitle Only - No Email)
+  // 2. Resolve Contact Person Name (Subtitle Only)
   let contactSubtitle = profile.contact_person;
   if (!contactSubtitle || contactSubtitle === 'Operations Lead' || contactSubtitle === 'Operations Contact') {
     if (currentUserEmail && currentUserEmail.includes('@')) {
@@ -84,21 +84,18 @@ export default function Navbar() {
         .replace(/[-_.]/g, ' ')
         .replace(/\b\w/g, (c: string) => c.toUpperCase());
     } else {
-      contactSubtitle = isSuperAdmin ? 'Super Administrator' : 'Client Representative';
+      contactSubtitle = isSuperAdmin ? 'Super Administrator' : 'Client Operations';
     }
   }
 
   return (
     <header className="h-18 bg-white/95 dark:bg-[#0B1120]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
-      {/* Left: Company Name & Contact Person Name Only */}
+      {/* Left: Company Name & Contact Person Name Only (Role Removed) */}
       <div className="flex items-center gap-4">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              <span>{companyTitle}</span>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-teal-100 dark:bg-cyan-500/20 text-teal-800 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30">
-                {isSuperAdmin ? 'Super Admin' : 'Client'}
-              </span>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+              {companyTitle}
             </h1>
 
             {/* Accurate Real-Time Gemini Connection Status */}
