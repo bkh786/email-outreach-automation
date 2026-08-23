@@ -403,22 +403,23 @@ export default function LeadTable({ onSelectLead, onOpenUploader, onOpenManualAd
                         )}
                       </td>
 
-                      {/* Actions */}
+                      {/* Actions - Always show both AI Research and Open Draft */}
                       <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
-                          {lead.status === 'pending' && (
-                            <button
-                              onClick={() => enrichSingleLead(lead.id)}
-                              className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30 text-xs font-bold transition-all"
-                              title="Enrich Lead with Gemini AI"
-                            >
-                              AI Research
-                            </button>
-                          )}
+                          <button
+                            onClick={() => enrichSingleLead(lead.id)}
+                            disabled={lead.status === 'enriching'}
+                            className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30 text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1 shadow-sm active:scale-95"
+                            title={lead.email_subject ? 'Re-run AI Research & regenerate pitch' : 'Enrich Lead with Gemini AI'}
+                          >
+                            <Sparkles className={`w-3 h-3 ${lead.status === 'enriching' ? 'animate-spin' : ''}`} />
+                            <span>{lead.status === 'enriching' ? 'Researching...' : 'AI Research'}</span>
+                          </button>
 
                           <button
                             onClick={() => onSelectLead(lead.id)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition-all"
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition-all shadow-sm active:scale-95"
+                            title="Open Lead Drawer & Email Pitch Editor"
                           >
                             Open Draft
                           </button>
