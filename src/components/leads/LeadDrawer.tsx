@@ -13,14 +13,15 @@ import {
   Send, 
   CheckCircle2, 
   AlertCircle, 
-  Clock, 
   Edit3, 
   Eye, 
   Save, 
   Trash2,
   TrendingUp,
   Cpu,
-  Check
+  Check,
+  User,
+  Loader2
 } from 'lucide-react';
 import { Lead, LeadStatus } from '@/lib/types';
 import { useApp } from '@/lib/store/app-context';
@@ -35,6 +36,7 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
   
   const lead = leads.find(l => l.id === leadId);
 
+  // Email draft state
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -44,10 +46,28 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
   const [sendSuccessMessage, setSendSuccessMessage] = useState<string | null>(null);
   const [sendErrorMessage, setSendErrorMessage] = useState<string | null>(null);
 
+  // Lead metadata edit mode state
+  const [isEditingLead, setIsEditingLead] = useState(false);
+  const [editCompanyName, setEditCompanyName] = useState('');
+  const [editContactPerson, setEditContactPerson] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editCountry, setEditCountry] = useState('');
+  const [editWebsiteUrl, setEditWebsiteUrl] = useState('');
+  const [isSavingLeadMeta, setIsSavingLeadMeta] = useState(false);
+  const [leadMetaSuccess, setLeadMetaSuccess] = useState(false);
+
   useEffect(() => {
     if (lead) {
       setSubject(lead.email_subject || '');
       setBody(lead.email_body || '');
+      setEditCompanyName(lead.company_name || '');
+      setEditContactPerson(lead.contact_person || '');
+      setEditEmail(lead.email || '');
+      setEditPhone(lead.phone || '');
+      setEditCountry(lead.country || '');
+      setEditWebsiteUrl(lead.website_url || '');
+      setIsEditingLead(false);
       setSendSuccessMessage(null);
       setSendErrorMessage(null);
     }
@@ -55,9 +75,43 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
 
   if (!lead) return null;
 
+  // Save Lead Metadata (Company Name, Contact Person, Email, Phone, Country, Website)
+  const handleSaveLeadMeta = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!editCompanyName.trim() || !editEmail.trim()) {
+      alert('Company Name and Recipient Email are required.');
+      return;
+    }
+
+    setIsSavingLeadMeta(true);
+    try {
+      await updateLead(lead.id, {
+        company_name: editCompanyName.trim(),
+        contact_person: editContactPerson.trim(),
+        email: editEmail.trim(),
+        phone: editPhone.trim(),
+        country: editCountry.trim(),
+        website_url: editWebsiteUrl.trim(),
+      });
+      setIsEditingLead(false);
+      setLeadMetaSuccess(true);
+      setTimeout(() => setLeadMetaSuccess(false), 3000);
+    } catch (err: any) {
+      alert('Failed to update lead: ' + err.message);
+    } finally {
+      setIsSavingLeadMeta(false);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     await updateLead(lead.id, {
+      company_name: editCompanyName.trim() || lead.company_name,
+      contact_person: editContactPerson.trim() || lead.contact_person,
+      email: editEmail.trim() || lead.email,
+      phone: editPhone.trim() || lead.phone,
+      country: editCountry.trim() || lead.country,
+      website_url: editWebsiteUrl.trim() || lead.website_url,
       email_subject: subject,
       email_body: body,
       status: lead.status === 'pending' ? 'drafted' : lead.status,
@@ -119,22 +173,37 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
       >
         {/* Drawer Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-[#080D18] sticky top-0 z-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-teal-700 dark:text-cyan-400 font-extrabold text-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-teal-700 dark:text-cyan-400 font-extrabold text-sm flex-shrink-0">
               {lead.company_name.slice(0, 2).toUpperCase()}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">{lead.company_name}</h3>
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${getStatusColor(lead.status)}`}>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate">{lead.company_name}</h3>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${getStatusColor(lead.status)} flex-shrink-0`}>
                   {lead.status.toUpperCase()}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{lead.contact_person || 'Logistics Lead'} &bull; {lead.country || 'Global Corridor'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{lead.contact_person || 'Logistics Lead'} &bull; {lead.country || 'Global Corridor'}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Edit Lead Details Button beside Delete Button */}
+            <button
+              onClick={() => setIsEditingLead(!isEditingLead)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-sm ${
+                isEditingLead
+                  ? 'bg-teal-600 text-white dark:bg-cyan-500 dark:text-slate-950 border-teal-600 dark:border-cyan-500'
+                  : 'bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+              }`}
+              title="Edit Lead Information"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
+              <span>{isEditingLead ? 'Cancel Edit' : 'Edit Lead'}</span>
+            </button>
+
+            {/* Delete Lead Button */}
             <button
               onClick={() => {
                 if (confirm(`Delete lead ${lead.company_name}?`)) {
@@ -142,14 +211,17 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
                   onClose();
                 }
               }}
-              className="p-2 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-colors"
               title="Delete Lead"
             >
               <Trash2 className="w-4 h-4" />
             </button>
+
+            {/* Close Drawer Button */}
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg"
+              title="Close Drawer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -179,37 +251,189 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
             </div>
           )}
 
-          {/* Quick Lead Meta Grid */}
-          <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs">
-            <div>
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Recipient Email:</span>
-              <p className="font-mono text-teal-700 dark:text-cyan-400 font-bold mt-0.5 truncate">{lead.email}</p>
+          {leadMetaSuccess && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs flex items-center gap-2 shadow-sm animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <span>Lead information updated and saved to database successfully!</span>
             </div>
-            <div>
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Phone:</span>
-              <p className="text-slate-800 dark:text-slate-200 font-mono mt-0.5">{lead.phone || 'N/A'}</p>
-            </div>
-            <div>
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Country / Corridor:</span>
-              <p className="text-slate-800 dark:text-slate-200 font-semibold mt-0.5">{lead.country || 'International'}</p>
-            </div>
-            <div>
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Website URL:</span>
-              {lead.website_url ? (
-                <a
-                  href={lead.website_url.startsWith('http') ? lead.website_url : `https://${lead.website_url}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-teal-600 dark:text-cyan-400 hover:underline flex items-center gap-1 font-mono mt-0.5 truncate font-medium"
+          )}
+
+          {/* Quick Lead Meta Card (View Mode vs Edit Mode) */}
+          {isEditingLead ? (
+            /* EDIT LEAD FORM */
+            <form onSubmit={handleSaveLeadMeta} className="p-5 rounded-2xl bg-white dark:bg-[#0F172A] border-2 border-teal-500/50 dark:border-cyan-500/50 shadow-md space-y-4 animate-in fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Edit3 className="w-4 h-4 text-teal-600 dark:text-cyan-400" />
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Edit Lead Details
+                  </h4>
+                </div>
+                <span className="text-[10px] text-teal-600 dark:text-cyan-400 font-bold">Modifying Database Record</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Company Name *
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={editCompanyName}
+                      onChange={(e) => setEditCompanyName(e.target.value)}
+                      placeholder="e.g. Confidence Cargo Limited"
+                      className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-2 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Contact Person Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={editContactPerson}
+                      onChange={(e) => setEditContactPerson(e.target.value)}
+                      placeholder="e.g. OLUDAYO DADA AIGBE"
+                      className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-2 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Recipient Email *
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      required
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      placeholder="dada@confidencecargo.com"
+                      className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-2 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="+2349862828921"
+                      className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-2 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Country / Corridor
+                  </label>
+                  <div className="relative">
+                    <Globe className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={editCountry}
+                      onChange={(e) => setEditCountry(e.target.value)}
+                      placeholder="e.g. Nigeria"
+                      className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-2 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Website URL
+                  </label>
+                  <div className="relative">
+                    <Globe className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={editWebsiteUrl}
+                      onChange={(e) => setEditWebsiteUrl(e.target.value)}
+                      placeholder="confidencecargo.com"
+                      className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-2 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons for Lead Edit */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingLead(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors"
                 >
-                  <span>{lead.website_url.replace(/https?:\/\//, '')}</span>
-                  <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                </a>
-              ) : (
-                <p className="text-slate-400 mt-0.5">None provided</p>
-              )}
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveLeadMeta}
+                  disabled={isSavingLeadMeta}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 text-xs font-extrabold shadow-sm active:scale-95 transition-all"
+                >
+                  {isSavingLeadMeta ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving Lead...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>Save Lead Details</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* VIEW LEAD META GRID */
+            <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs shadow-sm">
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Recipient Email:</span>
+                <p className="font-mono text-teal-700 dark:text-cyan-400 font-bold mt-0.5 truncate">{lead.email}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Phone:</span>
+                <p className="text-slate-800 dark:text-slate-200 font-mono mt-0.5">{lead.phone || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Country / Corridor:</span>
+                <p className="text-slate-800 dark:text-slate-200 font-semibold mt-0.5">{lead.country || 'International'}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Website URL:</span>
+                {lead.website_url ? (
+                  <a
+                    href={lead.website_url.startsWith('http') ? lead.website_url : `https://${lead.website_url}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-teal-600 dark:text-cyan-400 hover:underline flex items-center gap-1 font-mono mt-0.5 truncate font-medium"
+                  >
+                    <span>{lead.website_url.replace(/https?:\/\//, '')}</span>
+                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                  </a>
+                ) : (
+                  <p className="text-slate-400 mt-0.5">None provided</p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* AI Research & Intelligence Card */}
           <div className="rounded-2xl p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
@@ -340,7 +564,7 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all"
+            className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all shadow-sm active:scale-95"
           >
             <Save className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
             <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
