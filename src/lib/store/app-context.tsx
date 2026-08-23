@@ -124,35 +124,57 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // 1. Fetch profile from database
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+          const resolvedRole = isSuperAdminEmail ? 'super_admin' : (user.user_metadata?.role || 'client');
+          const finalCompanyName = metaCompanyName || domainCompanyFallback || (isSuperAdminEmail ? 'MarketPulse Master Platform' : 'Logistics Agency');
+          const finalContactPerson = metaContactPerson || (user.email ? user.email.split('@')[0].replace(/\b\w/g, (c: string) => c.toUpperCase()) : 'Operations Contact');
 
-          const finalCompanyName = 
-            profileData?.company_name || 
-            metaCompanyName || 
-            domainCompanyFallback || 
-            (isSuperAdminEmail ? 'MarketPulse Master Platform' : 'Logistics Agency');
-
-          const finalContactPerson = 
-            profileData?.contact_person || 
-            metaContactPerson || 
-            (user.email ? user.email.split('@')[0].replace(/\b\w/g, (c: string) => c.toUpperCase()) : 'Operations Contact');
-
-          const resolvedRole = isSuperAdminEmail ? 'super_admin' : (profileData?.role || user.user_metadata?.role || 'client');
-
-          const resolvedProfile: Profile = {
-            ...DEFAULT_PROFILE,
-            ...(profileData || {}),
-            company_name: finalCompanyName,
-            contact_person: finalContactPerson,
-            role: resolvedRole,
-          };
-          setProfile(resolvedProfile);
-          localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
+          // 1. Fetch profile from database via dedicated server API
+          try {
+            const profileRes = await fetch(`/api/profile/get?userId=${user.id}`);
+            const profileJson = await profileRes.json();
+            if (profileJson.success && profileJson.profile) {
+              const dbProf = profileJson.profile;
+              const resolved: Profile = {
+                ...DEFAULT_PROFILE,
+                ...dbProf,
+                company_name: dbProf.company_name || finalCompanyName,
+                contact_person: dbProf.contact_person || finalContactPerson,
+                role: resolvedRole,
+              };
+              setProfile(resolved);
+              localStorage.setItem('marketpulse_profile', JSON.stringify(resolved));
+            } else {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+              const resolvedProfile: Profile = {
+                ...DEFAULT_PROFILE,
+                ...(profileData || {}),
+                company_name: profileData?.company_name || finalCompanyName,
+                contact_person: profileData?.contact_person || finalContactPerson,
+                role: resolvedRole,
+              };
+              setProfile(resolvedProfile);
+              localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
+            }
+          } catch {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+            const resolvedProfile: Profile = {
+              ...DEFAULT_PROFILE,
+              ...(profileData || {}),
+              company_name: profileData?.company_name || finalCompanyName,
+              contact_person: profileData?.contact_person || finalContactPerson,
+              role: resolvedRole,
+            };
+            setProfile(resolvedProfile);
+            localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
+          }
 
           // 2. Fetch real user config from Supabase database via dedicated server API
           try {
@@ -192,7 +214,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               setLeads(leadsJson.leads);
               localStorage.setItem('marketpulse_leads', JSON.stringify(leadsJson.leads));
             } else {
-              // fallback direct Supabase query
               const { data: directLeads } = await supabase
                 .from('leads')
                 .select('*')
@@ -497,27 +518,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_profile', JSON.stringify(newProfile));
     }
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from('profiles').upsert({
-            id: user.id,
-            company_name: newProfile.company_name,
-            contact_person: newProfile.contact_person,
-            website_url: newProfile.website_url,
-            services_offered: newProfile.services_offered,
-            target_markets: newProfile.target_markets,
-            unique_selling_proposition: newProfile.unique_selling_proposition,
-            strengths_and_certifications: newProfile.strengths_and_certifications,
-            email_signature: newProfile.email_signature,
-            updated_at: new Date().toISOString(),
-          });
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const response = await fetch('/api/profile/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile: newProfile,
+          userId: user?.id,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.profile) {
+        setProfile(data.profile);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('marketpulse_profile', JSON.stringify(data.profile));
         }
-      } catch (err) {
-        console.error('Error updating profile in Supabase:', err);
       }
+    } catch (err) {
+      console.error('Error updating profile in database:', err);
     }
   };
 
