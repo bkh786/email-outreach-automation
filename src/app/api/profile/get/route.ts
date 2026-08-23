@@ -7,11 +7,14 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     let userId: string | null = null;
+    let userMeta: any = null;
+
     try {
       const serverSupabase = createServerSupabaseClient();
       const { data: { user } } = await serverSupabase.auth.getUser();
       if (user) {
         userId = user.id;
+        userMeta = user.user_metadata;
       }
     } catch {
       // ignore
@@ -24,6 +27,17 @@ export async function GET(req: NextRequest) {
     }
 
     const adminSupabase = createAdminClient();
+
+    if (userId && !userMeta) {
+      try {
+        const { data: userData } = await adminSupabase.auth.admin.getUserById(userId);
+        if (userData?.user) {
+          userMeta = userData.user.user_metadata;
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     let query = adminSupabase.from('profiles').select('*');
 
@@ -38,7 +52,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    const profile = profiles && profiles.length > 0 ? profiles[0] : null;
+    let profile = profiles && profiles.length > 0 ? profiles[0] : null;
+
+    if (profile && userMeta) {
+      profile = {
+        ...profile,
+        contact_person: profile.contact_person || userMeta.contact_person || userMeta.full_name || 'Operations Contact',
+        company_name: profile.company_name || userMeta.company_name || 'Logistics Agency',
+      };
+    }
 
     return NextResponse.json({
       success: true,
