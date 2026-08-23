@@ -22,18 +22,20 @@ const DEFAULT_PROFILE: Profile = {
   website_url: '',
   role: 'client',
   services_offered: [
-    'Transpacific Ocean FCL/LCL',
-    'Expedited Air Freight Charters',
     'Customs Clearance & Bonded CFS',
-    'Cold Chain & Pharma Logistics'
+    'Air Freight Expedited & Charters',
+    'Ocean FCL/LCL Consolidation',
+    'Road Transport & Rail Freight',
+    'Warehousing & 3PL Distribution'
   ],
   target_markets: [
-    'Asia -> North America',
-    'Europe -> North America',
-    'Southeast Asia Transshipment'
+    'India -> North America Air & Ocean FCL/LCL',
+    'India -> Europe Multimodal Corridors',
+    'India -> Middle East Supply Chain',
+    'Domestic Pan-India Road & Rail Transport'
   ],
-  unique_selling_proposition: '',
-  strengths_and_certifications: '',
+  unique_selling_proposition: '23+ years of experience delivering fast, certified, and flexible global logistics.',
+  strengths_and_certifications: 'IATA Cargo Agent, FIATA Member, WCA Partner, ISO 9001:2015',
   email_signature: ''
 };
 
@@ -87,12 +89,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activeBatchProgress, setActiveBatchProgress] = useState<{ current: number; total: number } | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('freightpulse_leads');
-      localStorage.removeItem('freightpulse_logs');
-      localStorage.removeItem('freightpulse_profile');
-      localStorage.removeItem('freightpulse_config');
-    }
     loadInitialData();
   }, []);
 
@@ -128,7 +124,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // Fetch profile from database
+          // 1. Fetch profile from database
           const { data: profileData } = await supabase
             .from('profiles')
             .select('*')
@@ -158,7 +154,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setProfile(resolvedProfile);
           localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
 
-          // Fetch real user config from Supabase
+          // 2. Fetch real user config from Supabase database
           const { data: configData } = await supabase
             .from('user_configs')
             .select('*')
@@ -170,21 +166,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             localStorage.setItem('marketpulse_config', JSON.stringify(configData));
           }
 
-          // Fetch real leads for this user/tenant from Supabase
-          const { data: dbLeads } = await supabase
-            .from('leads')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-          if (dbLeads) {
-            setLeads(dbLeads);
-            localStorage.setItem('marketpulse_leads', JSON.stringify(dbLeads));
-          } else {
-            setLeads([]);
-            localStorage.setItem('marketpulse_leads', JSON.stringify([]));
+          // 3. Fetch real leads via dedicated server API
+          try {
+            const leadsRes = await fetch(`/api/leads/list?userId=${user.id}`);
+            const leadsJson = await leadsRes.json();
+            if (leadsJson.success && Array.isArray(leadsJson.leads)) {
+              setLeads(leadsJson.leads);
+              localStorage.setItem('marketpulse_leads', JSON.stringify(leadsJson.leads));
+            } else {
+              // fallback direct Supabase query
+              const { data: directLeads } = await supabase
+                .from('leads')
+                .select('*')
+                .order('created_at', { ascending: false });
+              if (directLeads) {
+                setLeads(directLeads);
+                localStorage.setItem('marketpulse_leads', JSON.stringify(directLeads));
+              }
+            }
+          } catch {
+            const { data: directLeads } = await supabase
+              .from('leads')
+              .select('*')
+              .order('created_at', { ascending: false });
+            if (directLeads) {
+              setLeads(directLeads);
+              localStorage.setItem('marketpulse_leads', JSON.stringify(directLeads));
+            }
           }
 
-          // Fetch real campaign activity logs from Supabase
+          // 4. Fetch real campaign activity logs from Supabase
           const { data: dbLogs } = await supabase
             .from('campaign_logs')
             .select('*')
@@ -193,9 +204,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (dbLogs) {
             setLogs(dbLogs);
             localStorage.setItem('marketpulse_logs', JSON.stringify(dbLogs));
-          } else {
-            setLogs([]);
-            localStorage.setItem('marketpulse_logs', JSON.stringify([]));
           }
 
           return;
@@ -225,10 +233,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       else setLogs([]);
     } catch (e) {
       console.error('Error loading stored data:', e);
-      setLeads([]);
-      setProfile(DEFAULT_PROFILE);
-      setUserConfig(DEFAULT_USER_CONFIG);
-      setLogs([]);
     }
   };
 
@@ -247,7 +251,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addLeads = async (newLeadsData: Partial<Lead>[]) => {
-    const supabaseReady = isSupabaseConfigured();
     let formattedLeads: Lead[] = newLeadsData.map((data) => ({
       id: generateUuid(),
       company_name: data.company_name?.trim() || 'Unknown Company',
@@ -261,46 +264,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
     }));
 
-    if (supabaseReady) {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const insertPayload = formattedLeads.map(l => ({
-            id: l.id,
-            user_id: user.id,
-            company_name: l.company_name,
-            contact_person: l.contact_person,
-            email: l.email,
-            phone: l.phone,
-            country: l.country,
-            website_url: l.website_url,
-            source: l.source,
-            status: 'pending',
-          }));
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
 
-          const { data: insertedData, error: insertError } = await supabase
-            .from('leads')
-            .insert(insertPayload)
-            .select();
+      const response = await fetch('/api/leads/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leads: formattedLeads,
+          userId: user?.id,
+        }),
+      });
 
-          if (insertError) {
-            console.error('Supabase lead insert error:', insertError);
-          } else if (insertedData && insertedData.length > 0) {
-            formattedLeads = insertedData as Lead[];
-          }
-
-          // Also persist log to Supabase
-          await supabase.from('campaign_logs').insert({
-            id: generateUuid(),
-            user_id: user.id,
-            event_type: 'uploaded',
-            details: { count: formattedLeads.length },
-          });
-        }
-      } catch (err: any) {
-        console.error('Error inserting leads into Supabase:', err);
+      const resData = await response.json();
+      if (resData.success && resData.leads && resData.leads.length > 0) {
+        formattedLeads = resData.leads;
       }
+    } catch (err: any) {
+      console.error('Error saving leads via server API:', err);
     }
 
     const updated = [...formattedLeads, ...leads];
@@ -320,14 +302,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updated = leads.map(lead => lead.id === id ? { ...lead, ...updates } : lead);
     await persistLeads(updated);
 
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { error } = await supabase.from('leads').update(updates).eq('id', id);
-        if (error) console.error('Supabase update lead error:', error);
-      } catch (err) {
-        console.error('Error updating lead in Supabase:', err);
-      }
+    try {
+      await fetch('/api/leads/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, updates }),
+      });
+    } catch (err) {
+      console.error('Error updating lead via API:', err);
     }
   };
 
@@ -335,14 +317,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updated = leads.filter(lead => lead.id !== id);
     await persistLeads(updated);
 
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { error } = await supabase.from('leads').delete().eq('id', id);
-        if (error) console.error('Supabase delete lead error:', error);
-      } catch (err) {
-        console.error('Error deleting lead in Supabase:', err);
-      }
+    try {
+      await fetch('/api/leads/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+    } catch (err) {
+      console.error('Error deleting lead via API:', err);
     }
   };
 
@@ -351,14 +333,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updated = leads.filter(lead => !set.has(lead.id));
     await persistLeads(updated);
 
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { error } = await supabase.from('leads').delete().in('id', ids);
-        if (error) console.error('Supabase multi-delete lead error:', error);
-      } catch (err) {
-        console.error('Error deleting multiple leads in Supabase:', err);
-      }
+    try {
+      await fetch('/api/leads/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+    } catch (err) {
+      console.error('Error deleting multiple leads via API:', err);
     }
   };
 
@@ -404,24 +386,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         created_at: new Date().toISOString(),
       };
       await persistLogs([newLog, ...logs]);
-
-      if (isSupabaseConfigured()) {
-        try {
-          const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase.from('campaign_logs').insert({
-              id: logId,
-              user_id: user.id,
-              lead_id: id,
-              event_type: 'researched',
-              details: { subject: enrichment.email_subject },
-            });
-          }
-        } catch {
-          // ignore
-        }
-      }
 
       if (userConfig.auto_send_enabled) {
         await sendSingleEmail(id);
@@ -500,24 +464,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         created_at: new Date().toISOString(),
       };
       await persistLogs([newLog, ...logs]);
-
-      if (isSupabaseConfigured()) {
-        try {
-          const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase.from('campaign_logs').insert({
-              id: logId,
-              user_id: user.id,
-              lead_id: id,
-              event_type: 'sent',
-              details: { to: lead.email, subject: lead.email_subject },
-            });
-          }
-        } catch {
-          // ignore
-        }
-      }
 
       return { success: true, message: 'Email dispatched successfully!' };
     } catch (err: any) {

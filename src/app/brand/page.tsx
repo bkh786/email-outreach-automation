@@ -105,12 +105,12 @@ export default function BrandProfilePage() {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
-  // AI Autofill from Website Crawling
-  const handleAiAutofill = async () => {
-    if (!formData.website_url || formData.website_url.trim().length < 4) {
+  // Smart Fill with AI from Website Crawling
+  const handleSmartAiAutofill = async () => {
+    if (!formData.website_url || formData.website_url.trim().length < 3) {
       setAutofillMessage({
         type: 'error',
-        text: 'Please enter your Official Website URL first (e.g. https://aniriselogistics.com).'
+        text: 'Please enter your Official Website URL first (e.g. https://aniriselogistics.com or www.aniriselogistics.com).'
       });
       return;
     }
@@ -132,7 +132,7 @@ export default function BrandProfilePage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to analyze website with AI');
+        throw new Error(data.error || 'Failed to analyze website with Smart AI');
       }
 
       const generatedProfile: Profile = {
@@ -151,19 +151,19 @@ export default function BrandProfilePage() {
 
       setAutofillMessage({
         type: 'success',
-        text: 'Website scraped & brand profile synthesized with Gemini AI successfully!'
+        text: 'Website scraped & brand profile synthesized with Smart Fill with AI successfully!'
       });
     } catch (err: any) {
       setAutofillMessage({
         type: 'error',
-        text: err.message || 'AI Autofill encountered an error. Please verify your Gemini Key in Settings.'
+        text: err.message || 'Smart AI Autofill encountered an issue.'
       });
     } finally {
       setIsAutofilling(false);
     }
   };
 
-  const isUrlEntered = Boolean(formData.website_url && formData.website_url.trim().length > 3);
+  const isUrlEntered = Boolean(formData.website_url && formData.website_url.trim().length > 2);
 
   if (isSuperAdmin) {
     return (
@@ -237,7 +237,7 @@ export default function BrandProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Profile Form */}
         <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
-          {/* Card 1: Core Company Identity & Fill with AI */}
+          {/* Card 1: Core Company Identity & Smart Fill with AI */}
           <div className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-md space-y-5 transition-colors">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 flex-wrap gap-2">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
@@ -245,17 +245,17 @@ export default function BrandProfilePage() {
                 <span>Company Identity &amp; Credentials</span>
               </h3>
 
-              {/* ✨ Fill with AI Action Button */}
+              {/* ✨ Smart Fill with AI Action Button */}
               <button
                 type="button"
-                onClick={handleAiAutofill}
+                onClick={handleSmartAiAutofill}
                 disabled={!isUrlEntered || isAutofilling}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${
                   isUrlEntered
                     ? 'bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-500 hover:from-teal-500 hover:to-cyan-500 text-white shadow-teal-600/25 ring-2 ring-teal-500/20'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700'
                 }`}
-                title={isUrlEntered ? 'Crawl website with Gemini AI to auto-populate all profile fields' : 'Enter Official Website URL first to enable AI autofill'}
+                title={isUrlEntered ? 'Crawl website with Gemini AI to auto-populate all profile fields' : 'Enter Official Website URL first to enable Smart Fill with AI'}
               >
                 {isAutofilling ? (
                   <>
@@ -265,7 +265,7 @@ export default function BrandProfilePage() {
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                    <span>Fill with AI</span>
+                    <span>Smart Fill with AI</span>
                   </>
                 )}
               </button>
@@ -288,7 +288,7 @@ export default function BrandProfilePage() {
 
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Official Website URL (Enables AI Autofill)
+                  Official Website URL (Enables Smart Fill with AI)
                 </label>
                 <div className="relative">
                   <input
@@ -441,7 +441,7 @@ export default function BrandProfilePage() {
                 rows={6}
                 value={formData.email_signature}
                 onChange={(e) => setFormData({ ...formData, email_signature: e.target.value })}
-                placeholder={`Best regards,\n\nHimanshu Kumar Singh\nAnirise Logistics Pvt. Ltd.\nEmail: info@aniriselogistics.com\nPlot No-62 & 62A, Ground Floor, Block-WE, Mohan Garden, Uttam Nagar, New Delhi-110059 | Phone: +91-1143466415 | Website: www.aniriselogistics.com`}
+                placeholder={`Best regards,\n\nHimanshu Kumar Singh\nAnirise Logistics Pvt. Ltd.\nEmail: info@aniriselogistics.com\nPlot No-62 & 62A, Ground Floor, Block-WE, Mohan Garden, Uttam Nagar, New Delhi-110059 | Phone: +91-1143466415 | Website: https://aniriselogistics.com`}
                 className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono leading-relaxed text-xs"
               />
               <p className="text-[11px] text-slate-400">
