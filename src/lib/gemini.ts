@@ -28,7 +28,7 @@ Your objective is to analyze a prospective client company and synthesize a highl
 - Unique Value Proposition (USP): ${userProfile.unique_selling_proposition || 'Delivering measurable ROI through custom AI workflows, dedicated strategy, and robust execution.'}
 - Accreditations & Certifications: ${userProfile.strengths_and_certifications || 'Enterprise Verified, ISO Certified, Industry Leading Partner'}
 - Email Signature:
-${userProfile.email_signature || 'Best regards,\nBusiness Development Team'}
+${userProfile.email_signature || 'Thanks & Regards\nGrowth & Strategy Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | www.digipresence.in'}
 
 ### PROSPECT DATA (The Lead):
 - Company Name: ${lead.company_name || 'Prospective Partner'}
@@ -49,7 +49,7 @@ Analyze the lead's operational focus and produce a structured JSON response matc
   "company_profile": "2-3 concise sentences summarizing what this prospect does, their market focus, and their primary operational footprint.",
   "financial_info": "Observable scale indicators (e.g. estimated office count, market presence, enterprise scale, or tier bracket).",
   "email_subject": "A compelling, 4-8 word, curiosity-inducing cold email subject line customized to the prospect's company and operational focus (avoid cheesy spam phrases).",
-  "email_body": "A tailored, high-converting B2B cold outreach email (approx 120-180 words). The email MUST:\n1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally.\n2. Reference a specific aspect of ${lead.company_name}'s operations or market focus based on the scraped context.\n3. Clearly bridge how ${userProfile.company_name || 'our company'}'s strengths (${Array.isArray(userProfile.services_offered) ? userProfile.services_offered.slice(0, 2).join(' & ') : 'our solutions'}) directly address bottlenecks and deliver measurable value.\n4. Include a low-friction call to action (e.g. sharing relevant benchmarks or a brief 10-minute discovery call).\n5. Conclude cleanly with the sender's full signature."
+  "email_body": "A tailored, high-converting B2B cold outreach email (approx 120-180 words). The email MUST:\n1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally.\n2. Reference a specific aspect of ${lead.company_name}'s operations or market focus based on the scraped context.\n3. Clearly bridge how ${userProfile.company_name || 'our company'}'s strengths (${Array.isArray(userProfile.services_offered) ? userProfile.services_offered.slice(0, 2).join(' & ') : 'our solutions'}) directly solve bottlenecks or unlock measurable growth.\n4. Call to Action (CTA): Conclude with a low-friction closing statement that compels the prospect to simply reply back to this email or call back on the contact number provided in the signature. NEVER ask to schedule a calendar meeting or suggest a specific day/time (like '10-minute call this Thursday'), as this causes friction in cold email outreach.\n5. Conclude cleanly with the sender's full signature formatted exactly as: Thanks & Regards\\n[Name / Team]\\n[Company Name]\\nEmail: [Email]\\nAddress: [Address] | Phone No.: [Phone] | [Website]\\n[Portfolio/Social Links]."
 }
 
 Return ONLY valid JSON matching this exact structure.
@@ -143,7 +143,7 @@ function generateFallbackEnrichment(
   const services = Array.isArray(userProfile.services_offered) && userProfile.services_offered.length > 0 
     ? userProfile.services_offered.slice(0, 2).join(' and ')
     : 'Custom AI Automation and Digital Solutions';
-  const signature = userProfile.email_signature || `Best regards,\n\nBusiness Development Team\n${senderCompany}`;
+  const signature = userProfile.email_signature || `Thanks & Regards\nGrowth & Strategy Team\n${senderCompany}\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | www.digipresence.in`;
 
   const summaryContext = scrapedData?.description || scrapedData?.title 
     ? `${scrapedData.title ? scrapedData.title + '. ' : ''}${scrapedData.description || ''}`
@@ -161,7 +161,7 @@ At ${senderCompany}, we specialize in ${services}${userProfile.strengths_and_cer
 
 ${userProfile.unique_selling_proposition ? `Specifically, ${userProfile.unique_selling_proposition.toLowerCase()}` : 'We provide end-to-end strategy, dedicated execution, and measurable ROI.'}
 
-Would you be open to a brief 10-minute discovery call this Thursday to explore potential synergies for ${companyName}?
+If this resonates with your current roadmap, simply reply directly to this email or call us on the contact number below, and we'll be glad to share relevant case benchmarks.
 
 ${signature}`,
   };

@@ -302,19 +302,36 @@ export default function BrandProfilePage() {
               </p>
             </div>
 
-            {/* Accreditations */}
-            <div className="text-xs">
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5 text-amber-500" />
-                <span>Certifications, Network Licenses &amp; Memberships</span>
-              </label>
-              <input
-                type="text"
-                value={formData.strengths_and_certifications}
-                onChange={(e) => setFormData({ ...formData, strengths_and_certifications: e.target.value })}
-                placeholder="e.g. ISO 9001:2015, Google Premier Partner, HubSpot Certified, Enterprise Security Verified"
-                className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              {/* Accreditations */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Certifications &amp; Accreditations</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.strengths_and_certifications}
+                  onChange={(e) => setFormData({ ...formData, strengths_and_certifications: e.target.value })}
+                  placeholder="e.g. ISO 9001:2015, Google Premier Partner, HubSpot Certified"
+                  className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Company Portfolio / Credential Deck Link */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
+                  <span>Company Credentials / Portfolio Deck (URL)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.portfolio_url || ''}
+                  onChange={(e) => setFormData({ ...formData, portfolio_url: e.target.value })}
+                  placeholder="https://digipresence.in/portfolio or Google Drive PDF link"
+                  className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
+                />
+              </div>
             </div>
           </div>
 
@@ -352,7 +369,7 @@ export default function BrandProfilePage() {
                 type="text"
                 value={newService}
                 onChange={(e) => setNewService(e.target.value)}
-                placeholder="Add custom service (e.g. Breakbulk charter, AOG spares, DDP Consolidation)..."
+                placeholder="Add custom service (e.g. Appointment Systems, Custom CRM, PPC Funnels)..."
                 className="flex-1 bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
               />
               <button
@@ -399,7 +416,7 @@ export default function BrandProfilePage() {
                 type="text"
                 value={newMarket}
                 onChange={(e) => setNewMarket(e.target.value)}
-                placeholder="Add custom trade corridor (e.g. India -> Middle East Air Expedited)..."
+                placeholder="Add custom target market (e.g. Indian MSMEs, Doctors & Salons)..."
                 className="flex-1 bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
               />
               <button
@@ -407,7 +424,7 @@ export default function BrandProfilePage() {
                 onClick={handleAddCustomMarket}
                 className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-sm"
               >
-                Add Corridor
+                Add Segment
               </button>
             </div>
           </div>
@@ -424,11 +441,11 @@ export default function BrandProfilePage() {
                 rows={6}
                 value={formData.email_signature}
                 onChange={(e) => setFormData({ ...formData, email_signature: e.target.value })}
-                placeholder={`Best regards,\n\nHimanshu Kumar Singh\nAnirise Logistics Pvt. Ltd.\nEmail: info@aniriselogistics.com\nPlot No-62 & 62A, Ground Floor, Block-WE, Mohan Garden, Uttam Nagar, New Delhi-110059 | Phone: +91-1143466415 | Website: https://aniriselogistics.com`}
+                placeholder={`Thanks & Regards\nOperations & Growth Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | https://www.digipresence.in\nLinkedIn: https://linkedin.com/company/digipresence-solutions`}
                 className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono leading-relaxed text-xs"
               />
               <p className="text-[11px] text-slate-400">
-                This exact signature is automatically appended to every AI-drafted cold email pitch.
+                Pattern: Thanks &amp; Regards &bull; [Name / Team] &bull; [Company Name] &bull; [Email] &bull; [Address | Phone | Website] &bull; [Portfolio / Social Links]
               </p>
             </div>
           </div>
@@ -477,42 +494,51 @@ export default function BrandProfilePage() {
 
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-800 dark:text-slate-300 space-y-3.5 max-h-[460px] overflow-y-auto leading-relaxed shadow-inner">
               <div>
-                <span className="text-teal-700 dark:text-cyan-400 font-bold"># SENDER_AGENCY:</span>
-                <p className="text-slate-900 dark:text-white mt-0.5 font-sans font-bold">{formData.company_name || 'Not Set'}</p>
+                <span className="text-teal-700 dark:text-cyan-400 font-bold"># SENDER_COMPANY:</span>
+                <p className="text-slate-900 dark:text-white mt-0.5 font-sans font-bold">{formData.company_name || 'Digi Presence Solutions'}</p>
               </div>
 
               <div>
                 <span className="text-teal-700 dark:text-cyan-400 font-bold"># CORE_SERVICES:</span>
                 <p className="text-slate-700 dark:text-slate-300 mt-0.5">
-                  {(formData.services_offered || []).join(', ') || 'Customs Clearance & Bonded CFS, Air Freight, Sea Freight, Road Transport, Rail Freight'}
+                  {(formData.services_offered || []).join(', ') || 'Website Engineering, Custom Automation, Lead Acquisition Engines, AI Strategy'}
                 </p>
               </div>
 
               <div>
-                <span className="text-amber-600 dark:text-amber-400 font-bold"># TARGET_CORRIDORS:</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold"># TARGET_MARKETS:</span>
                 <p className="text-slate-700 dark:text-slate-300 mt-0.5">
-                  {(formData.target_markets || []).join(', ') || 'India -> North America, India -> Europe, Asia -> North America'}
+                  {(formData.target_markets || []).join(', ') || 'Indian MSMEs, Growing Enterprises, B2B Clients'}
                 </p>
               </div>
 
               <div>
                 <span className="text-emerald-700 dark:text-emerald-400 font-bold"># VALUE_PROPOSITION:</span>
                 <p className="text-slate-700 dark:text-slate-300 mt-0.5">
-                  {formData.unique_selling_proposition || 'Competitive freight rates and dedicated logistics operations.'}
+                  {formData.unique_selling_proposition || 'Transforming local businesses into unignorable digital brands through high-performance engineering.'}
                 </p>
               </div>
 
               <div>
-                <span className="text-indigo-700 dark:text-indigo-400 font-bold"># ACCREDITATIONS:</span>
+                <span className="text-indigo-700 dark:text-indigo-400 font-bold"># CREDENTIALS &amp; ACCREDITATIONS:</span>
                 <p className="text-slate-700 dark:text-slate-300 mt-0.5">
-                  {formData.strengths_and_certifications || 'Verified Logistics Partner, ISO 9001:2015, IATA, WCA Operations.'}
+                  {formData.strengths_and_certifications || 'Google Certified Partner, Meta Certified Strategy, Enterprise Architecture'}
                 </p>
               </div>
+
+              {formData.portfolio_url && (
+                <div>
+                  <span className="text-sky-700 dark:text-sky-400 font-bold"># CREDENTIALS_DECK_LINK:</span>
+                  <p className="text-slate-700 dark:text-slate-300 mt-0.5 underline">
+                    {formData.portfolio_url}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="p-3.5 rounded-2xl bg-teal-50 dark:bg-cyan-500/5 border border-teal-200 dark:border-cyan-500/20 text-teal-900 dark:text-slate-300 text-xs flex items-center gap-2.5">
               <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-cyan-400 flex-shrink-0" />
-              <span>Ensures 0% generic pitches — all outreach is hyper-targeted to your agency's actual capabilities.</span>
+              <span>Ensures 0% generic pitches — all outreach is hyper-targeted to your company's actual capabilities and credentials.</span>
             </div>
           </div>
         </div>

@@ -127,7 +127,7 @@ Synthesize a comprehensive, high-converting B2B brand profile in JSON format mat
     "Target Market 2",
     "Target Market 3"
   ],
-  "email_signature": "Best regards,\\n\\n${cleanContactPerson}\\n${bestCompanyName}\\nEmail: info@${domainOnly}\\nWebsite: ${targetUrl}"
+  "email_signature": "Thanks & Regards\\n${cleanContactPerson}\\n${bestCompanyName}\\nEmail: info@${domainOnly}\\nAddress: Corporate Office | Phone No.: +91 9064435909 | ${targetUrl}\\nLinkedIn: linkedin.com/company/${domainOnly.split('.')[0]}"
 }
 
 Return ONLY valid JSON matching this schema without markdown code fences or conversational text.`;
@@ -211,7 +211,7 @@ Return ONLY valid JSON matching this schema without markdown code fences or conv
           'Industry Specific B2B Clients',
           'National & International Markets'
         ],
-        email_signature: `Best regards,\n\n${cleanContactPerson}\n${bestCompanyName}\nEmail: info@${domainOnly}\nWebsite: ${targetUrl}`
+        email_signature: `Thanks & Regards\n${cleanContactPerson}\n${bestCompanyName}\nEmail: info@${domainOnly}\nAddress: Corporate Office | Phone No.: +91 9064435909 | ${targetUrl}\nLinkedIn: linkedin.com/company/${domainOnly.split('.')[0]}`
       };
     }
 
@@ -233,7 +233,7 @@ Return ONLY valid JSON matching this schema without markdown code fences or conv
     // Format email_signature as string
     let finalSignature = synthesizedResult.email_signature || '';
     if (typeof finalSignature === 'object') {
-      finalSignature = `Best regards,\n\n${cleanContactPerson}\n${synthesizedResult.company_name || bestCompanyName}\nEmail: info@${domainOnly}\nWebsite: ${targetUrl}`;
+      finalSignature = `Thanks & Regards\n${cleanContactPerson}\n${synthesizedResult.company_name || bestCompanyName}\nEmail: info@${domainOnly}\nAddress: Corporate Office | Phone No.: +91 9064435909 | ${targetUrl}\nLinkedIn: linkedin.com/company/${domainOnly.split('.')[0]}`;
     }
 
     return NextResponse.json({

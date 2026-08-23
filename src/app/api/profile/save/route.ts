@@ -55,9 +55,10 @@ export async function POST(req: NextRequest) {
     // 2. Prepare payload for public.profiles table
     const fullPayload: Record<string, any> = {
       id: userId,
-      company_name: profile.company_name || 'Logistics Company',
+      company_name: profile.company_name || 'Digi Presence Solutions',
       contact_person: profile.contact_person || 'Operations Lead',
       website_url: profile.website_url || '',
+      portfolio_url: profile.portfolio_url || '',
       services_offered: Array.isArray(profile.services_offered) ? profile.services_offered : [],
       target_markets: Array.isArray(profile.target_markets) ? profile.target_markets : [],
       unique_selling_proposition: profile.unique_selling_proposition || '',
@@ -66,17 +67,18 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    // Try upsert with contact_person
+    // Try upsert with all fields
     let { data: savedData, error: saveError } = await adminSupabase
       .from('profiles')
       .upsert(fullPayload, { onConflict: 'id' })
       .select()
       .single();
 
-    // If contact_person column does not exist in profiles table, retry without it
-    if (saveError && (saveError.message?.includes('contact_person') || saveError.code === '42703')) {
+    // If specific columns (contact_person, portfolio_url) do not exist in profiles table, retry safely
+    if (saveError && (saveError.code === '42703' || saveError.message?.includes('does not exist'))) {
       const fallbackPayload = { ...fullPayload };
       delete fallbackPayload.contact_person;
+      delete fallbackPayload.portfolio_url;
 
       const retryResult = await adminSupabase
         .from('profiles')

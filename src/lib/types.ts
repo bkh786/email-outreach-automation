@@ -7,6 +7,7 @@ export interface Profile {
   company_name: string;
   contact_person?: string;
   website_url?: string;
+  portfolio_url?: string;
   role?: 'super_admin' | 'admin' | 'client';
   services_offered: string[];
   target_markets: string[];
@@ -42,6 +43,7 @@ export interface UserConfig {
   smtp_secure?: boolean;
   from_name?: string;
   from_email?: string;
+  portfolio_url?: string;
   auto_send_enabled?: boolean;
   max_daily_emails?: number;
   max_hourly_rate?: number;
@@ -104,4 +106,10 @@ export interface SmtpConfig {
   secure?: boolean;
   fromName: string;
   fromEmail: string;
+  attachments?: Array<{
+    filename: string;
+    path?: string;
+    content?: string;
+    contentType?: string;
+  }>;
 }

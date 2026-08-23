@@ -17,26 +17,26 @@ const generateUuid = () => {
 
 const DEFAULT_PROFILE: Profile = {
   id: 'master-profile',
-  company_name: 'Logistics Company',
+  company_name: 'Digi Presence Solutions',
   contact_person: 'Operations Lead',
-  website_url: '',
+  website_url: 'https://digipresence.in',
+  portfolio_url: 'https://digipresence.in',
   role: 'client',
   services_offered: [
-    'Customs Clearance & Bonded CFS',
-    'Air Freight Expedited & Charters',
-    'Ocean FCL/LCL Consolidation',
-    'Road Transport & Rail Freight',
-    'Warehousing & 3PL Distribution'
+    'Website Engineering & Design',
+    'Custom Business Automation',
+    'Lead Acquisition Engines',
+    'AI & Digital Strategy'
   ],
   target_markets: [
-    'India -> North America Air & Ocean FCL/LCL',
-    'India -> Europe Multimodal Corridors',
-    'India -> Middle East Supply Chain',
-    'Domestic Pan-India Road & Rail Transport'
+    'Growing MSMEs & Regional Businesses',
+    'Enterprise B2B Clients',
+    'Medical & Healthcare Clinics',
+    'High-Growth Startups'
   ],
-  unique_selling_proposition: '23+ years of experience delivering fast, certified, and flexible global logistics.',
-  strengths_and_certifications: 'IATA Cargo Agent, FIATA Member, WCA Partner, ISO 9001:2015',
-  email_signature: ''
+  unique_selling_proposition: 'Transforming businesses into unignorable digital brands through high-performance engineering, automated workflow systems, and client acquisition pipelines.',
+  strengths_and_certifications: 'Google Certified Partner, Meta Certified Strategy, Enterprise Architecture, 24/7 Support',
+  email_signature: 'Thanks & Regards\nOperations & Growth Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | https://www.digipresence.in\nLinkedIn: https://linkedin.com/company/digipresence-solutions'
 };
 
 const DEFAULT_USER_CONFIG: UserConfig = {

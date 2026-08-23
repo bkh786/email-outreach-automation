@@ -59,13 +59,19 @@ export async function sendEmail({
       </div>
     `;
 
-    const info = await transporter.sendMail({
+    const mailOptions: any = {
       from: fromAddress,
       to,
       subject,
       text: body,
       html: htmlBody,
-    });
+    };
+
+    if (Array.isArray(config.attachments) && config.attachments.length > 0) {
+      mailOptions.attachments = config.attachments;
+    }
+
+    const info = await transporter.sendMail(mailOptions);
 
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
