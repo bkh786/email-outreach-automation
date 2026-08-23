@@ -4,9 +4,20 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Lead, Profile, UserConfig, CampaignLog } from '@/lib/types';
 import { isSupabaseConfigured, createClient } from '@/lib/supabase/client';
 
+const generateUuid = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 const DEFAULT_PROFILE: Profile = {
   id: 'master-profile',
-  company_name: 'Freight Forwarding Agency',
+  company_name: 'Logistics Company',
   contact_person: 'Operations Lead',
   website_url: '',
   role: 'client',
@@ -76,7 +87,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activeBatchProgress, setActiveBatchProgress] = useState<{ current: number; total: number } | null>(null);
 
   useEffect(() => {
-    // Clear legacy mock data caches
     if (typeof window !== 'undefined') {
       localStorage.removeItem('freightpulse_leads');
       localStorage.removeItem('freightpulse_logs');
@@ -92,7 +102,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const supabaseReady = isSupabaseConfigured();
     setIsDemoMode(!supabaseReady);
 
-    // If Supabase is available, load user, profile, real leads and real logs
     if (supabaseReady) {
       try {
         const supabase = createClient();
@@ -106,13 +115,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             user.email === 'admin@marketpulse.ai' ||
             user.user_metadata?.role === 'super_admin';
 
-          // Extract company name and contact person from user metadata or email domain
           const metaCompanyName = user.user_metadata?.company_name || '';
           const metaContactPerson = user.user_metadata?.full_name || user.user_metadata?.contact_person || '';
 
           let domainCompanyFallback = '';
           if (user.email && user.email.includes('@')) {
-            const domainPart = user.email.split('@')[1].split('.')[0];
+            const domainPart = user.email.split('@')[1]?.split('.')[0];
             if (domainPart && !['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud'].includes(domainPart.toLowerCase())) {
               domainCompanyFallback = domainPart
                 .replace(/[-_]/g, ' ')
@@ -131,7 +139,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             profileData?.company_name || 
             metaCompanyName || 
             domainCompanyFallback || 
-            (isSuperAdminEmail ? 'Super Admin Portal' : 'Logistics Company');
+            (isSuperAdminEmail ? 'MarketPulse Master Platform' : 'Logistics Agency');
 
           const finalContactPerson = 
             profileData?.contact_person || 
@@ -163,10 +171,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
 
           // Fetch real leads for this user/tenant from Supabase
-          const { data: dbLeads } = await supabase
+          const { data: dbLeads, error: leadsError } = await supabase
             .from('leads')
             .select('*')
             .order('created_at', { ascending: false });
+
+          if (leadsError) {
+            console.warn('Leads fetch warning:', leadsError.message);
+          }
 
           if (dbLeads) {
             setLeads(dbLeads);
@@ -240,15 +252,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addLeads = async (newLeadsData: Partial<Lead>[]) => {
     const supabaseReady = isSupabaseConfigured();
-    const formattedLeads: Lead[] = newLeadsData.map((data, idx) => ({
-      id: `lead-${Date.now()}-${idx}`,
-      company_name: data.company_name || 'Unknown Company',
-      contact_person: data.contact_person || '',
-      email: data.email || '',
-      phone: data.phone || '',
-      country: data.country || 'International',
-      website_url: data.website_url || '',
-      source: data.source || 'csv_import',
+    let formattedLeads: Lead[] = newLeadsData.map((data) => ({
+      id: generateUuid(),
+      company_name: data.company_name?.trim() || 'Unknown Company',
+      contact_person: data.contact_person?.trim() || '',
+      email: data.email?.trim() || '',
+      phone: data.phone?.trim() || '',
+      country: data.country?.trim() || 'International',
+      website_url: data.website_url?.trim() || '',
+      source: data.source || 'manual_upload',
       status: 'pending',
       created_at: new Date().toISOString(),
     }));
@@ -259,12 +271,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const insertPayload = formattedLeads.map(l => ({
-            ...l,
+            id: l.id,
             user_id: user.id,
+            company_name: l.company_name,
+            contact_person: l.contact_person,
+            email: l.email,
+            phone: l.phone,
+            country: l.country,
+            website_url: l.website_url,
+            source: l.source,
+            status: 'pending',
           }));
-          await supabase.from('leads').insert(insertPayload);
+
+          const { data: insertedData, error: insertError } = await supabase
+            .from('leads')
+            .insert(insertPayload)
+            .select();
+
+          if (insertError) {
+            console.error('Supabase lead insert error:', insertError);
+          } else if (insertedData && insertedData.length > 0) {
+            formattedLeads = insertedData as Lead[];
+          }
+
+          // Also persist log to Supabase
+          await supabase.from('campaign_logs').insert({
+            id: generateUuid(),
+            user_id: user.id,
+            event_type: 'uploaded',
+            details: { count: formattedLeads.length },
+          });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error inserting leads into Supabase:', err);
       }
     }
@@ -273,7 +311,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await persistLeads(updated);
 
     const newLog: CampaignLog = {
-      id: `log-${Date.now()}`,
+      id: generateUuid(),
       event_type: 'uploaded',
       lead_company: `${formattedLeads.length} Leads Ingested`,
       details: { count: formattedLeads.length },
@@ -289,7 +327,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured()) {
       try {
         const supabase = createClient();
-        await supabase.from('leads').update(updates).eq('id', id);
+        const { error } = await supabase.from('leads').update(updates).eq('id', id);
+        if (error) console.error('Supabase update lead error:', error);
       } catch (err) {
         console.error('Error updating lead in Supabase:', err);
       }
@@ -303,7 +342,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured()) {
       try {
         const supabase = createClient();
-        await supabase.from('leads').delete().eq('id', id);
+        const { error } = await supabase.from('leads').delete().eq('id', id);
+        if (error) console.error('Supabase delete lead error:', error);
       } catch (err) {
         console.error('Error deleting lead in Supabase:', err);
       }
@@ -318,7 +358,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured()) {
       try {
         const supabase = createClient();
-        await supabase.from('leads').delete().in('id', ids);
+        const { error } = await supabase.from('leads').delete().in('id', ids);
+        if (error) console.error('Supabase multi-delete lead error:', error);
       } catch (err) {
         console.error('Error deleting multiple leads in Supabase:', err);
       }
@@ -348,23 +389,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       const enrichment = data.enrichment;
-      updateLead(id, {
+      const updates: Partial<Lead> = {
         company_profile: enrichment.company_profile,
         financial_info: enrichment.financial_info,
         email_subject: enrichment.email_subject,
         email_body: enrichment.email_body,
         status: userConfig.auto_send_enabled ? 'approved' : 'drafted',
-      });
+      };
+      await updateLead(id, updates);
 
+      const logId = generateUuid();
       const newLog: CampaignLog = {
-        id: `log-${Date.now()}`,
+        id: logId,
         lead_id: id,
         event_type: 'researched',
         lead_company: lead.company_name,
         details: { subject: enrichment.email_subject },
         created_at: new Date().toISOString(),
       };
-      persistLogs([newLog, ...logs]);
+      await persistLogs([newLog, ...logs]);
+
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('campaign_logs').insert({
+              id: logId,
+              user_id: user.id,
+              lead_id: id,
+              event_type: 'researched',
+              details: { subject: enrichment.email_subject },
+            });
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       if (userConfig.auto_send_enabled) {
         await sendSingleEmail(id);
@@ -372,7 +433,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       return true;
     } catch (err: any) {
-      updateLead(id, {
+      await updateLead(id, {
         status: 'failed',
         error_message: err.message || 'AI enrichment failed',
       });
@@ -427,25 +488,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.error || 'Failed to dispatch email');
       }
 
-      updateLead(id, {
+      await updateLead(id, {
         status: 'sent',
         sent_at: new Date().toISOString(),
         error_message: undefined,
       });
 
+      const logId = generateUuid();
       const newLog: CampaignLog = {
-        id: `log-${Date.now()}`,
+        id: logId,
         lead_id: id,
         event_type: 'sent',
         lead_company: lead.company_name,
         details: { to: lead.email, subject: lead.email_subject },
         created_at: new Date().toISOString(),
       };
-      persistLogs([newLog, ...logs]);
+      await persistLogs([newLog, ...logs]);
+
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('campaign_logs').insert({
+              id: logId,
+              user_id: user.id,
+              lead_id: id,
+              event_type: 'sent',
+              details: { to: lead.email, subject: lead.email_subject },
+            });
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       return { success: true, message: 'Email dispatched successfully!' };
     } catch (err: any) {
-      updateLead(id, {
+      await updateLead(id, {
         error_message: err.message,
       });
       return { success: false, message: err.message || 'Dispatch error' };

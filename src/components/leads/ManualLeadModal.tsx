@@ -7,7 +7,7 @@ import { Lead } from '@/lib/types';
 interface ManualLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddLead: (lead: Partial<Lead>) => void;
+  onAddLead: (lead: Partial<Lead>) => Promise<void> | void;
 }
 
 export default function ManualLeadModal({ isOpen, onClose, onAddLead }: ManualLeadModalProps) {
@@ -20,27 +20,35 @@ export default function ManualLeadModal({ isOpen, onClose, onAddLead }: ManualLe
     website_url: '',
     source: 'manual_upload',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.company_name || !formData.email) {
       alert('Company Name and Email are required.');
       return;
     }
 
-    onAddLead(formData);
-    onClose();
-    setFormData({
-      company_name: '',
-      contact_person: '',
-      email: '',
-      phone: '',
-      country: 'United States',
-      website_url: '',
-      source: 'manual_upload',
-    });
+    setIsSubmitting(true);
+    try {
+      await onAddLead(formData);
+      setFormData({
+        company_name: '',
+        contact_person: '',
+        email: '',
+        phone: '',
+        country: 'United States',
+        website_url: '',
+        source: 'manual_upload',
+      });
+      onClose();
+    } catch (err: any) {
+      alert(`Error saving lead: ${err.message || 'Please check your connection.'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -62,6 +70,7 @@ export default function ManualLeadModal({ isOpen, onClose, onAddLead }: ManualLe
 
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -162,16 +171,18 @@ export default function ManualLeadModal({ isOpen, onClose, onAddLead }: ManualLe
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-500 text-white dark:text-slate-950 font-bold shadow-md shadow-teal-600/20 dark:shadow-cyan-500/20 active:scale-95 transition-all"
+              disabled={isSubmitting}
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-500 text-white dark:text-slate-950 font-bold shadow-md shadow-teal-600/20 dark:shadow-cyan-500/20 active:scale-95 transition-all disabled:opacity-50"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Save & Add to Queue</span>
+              <Sparkles className={`w-3.5 h-3.5 ${isSubmitting ? 'animate-spin' : ''}`} />
+              <span>{isSubmitting ? 'Saving to Database...' : 'Save & Add to Queue'}</span>
             </button>
           </div>
         </form>

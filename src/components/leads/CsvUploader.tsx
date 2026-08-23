@@ -166,7 +166,7 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
     }
   };
 
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (!columnMap.company_name && !columnMap.email) {
       setError('Please map at least the Company Name or Email column.');
       return;
@@ -187,8 +187,15 @@ Rotterdam Port Forwarders BV,Jan de Vries,jan@rotterdamforwarders.nl,+31 10 498 
       return;
     }
 
-    onImportLeads(formatted);
-    if (onClose) onClose();
+    setIsProcessing(true);
+    try {
+      await onImportLeads(formatted);
+      if (onClose) onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to import leads.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
