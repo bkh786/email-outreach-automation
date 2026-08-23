@@ -26,26 +26,26 @@ export async function enrichLeadWithGemini(
   const cleanedKey = rawKey.trim().replace(/^['"]|['"]$/g, '');
 
   const prompt = `
-You are an expert enterprise B2B cold outreach copywriter and freight forwarding business development executive.
-Your objective is to analyze a prospective logistics/importer/exporter client and synthesize a highly personalized, compelling, non-generic cold outreach email from the sender's freight forwarding agency.
+You are an expert enterprise B2B cold outreach copywriter and business development strategist.
+Your objective is to analyze a prospective client company and synthesize a highly personalized, compelling, non-generic cold outreach email from the sender's company.
 
 ### SENDER'S BRAND PROFILE (Our Company):
-- Company Name: ${userProfile.company_name || 'Global Freight Dynamics Ltd.'}
-- Core Logistics Strengths: ${Array.isArray(userProfile.services_offered) ? userProfile.services_offered.join(', ') : 'Air Freight, Ocean FCL/LCL, Customs Clearance, DDP'}
-- Target Trade Lanes / Corridors: ${Array.isArray(userProfile.target_markets) ? userProfile.target_markets.join(', ') : 'USA, Europe, Asia'}
-- Unique Value Proposition (USP): ${userProfile.unique_selling_proposition || 'Guaranteed space allocations, real-time telemetry, dedicated account managers'}
-- Accreditations & Certifications: ${userProfile.strengths_and_certifications || 'IATA Cargo Agent, FIATA Member, WCA Partner'}
+- Company Name: ${userProfile.company_name || 'DigiPresence Solutions'}
+- Core Business Capabilities & Strengths: ${Array.isArray(userProfile.services_offered) ? userProfile.services_offered.join(', ') : 'Digital Solutions, Operations, Technology & Outreach Automation'}
+- Target Markets & Industry Segments: ${Array.isArray(userProfile.target_markets) ? userProfile.target_markets.join(', ') : 'Global B2B, North America, Europe, Asia'}
+- Unique Value Proposition (USP): ${userProfile.unique_selling_proposition || 'Delivering measurable ROI through custom AI workflows, dedicated strategy, and robust execution.'}
+- Accreditations & Certifications: ${userProfile.strengths_and_certifications || 'Enterprise Verified, ISO Certified, Industry Leading Partner'}
 - Email Signature:
-${userProfile.email_signature || 'Best regards,\nOperations Team'}
+${userProfile.email_signature || 'Best regards,\nBusiness Development Team'}
 
 ### PROSPECT DATA (The Lead):
 - Company Name: ${lead.company_name || 'Prospective Partner'}
-- Contact Person: ${lead.contact_person || 'Logistics & Supply Chain Director'}
+- Contact Person: ${lead.contact_person || 'Business & Operations Leader'}
 - Email: ${lead.email || ''}
 - Country / Region: ${lead.country || 'International'}
 - Website URL: ${lead.website_url || 'N/A'}
-- Scraped Web Summary: ${scrapedData?.description || scrapedData?.title || 'Logistics & Trading Operations'}
-- Detected Capabilities: ${scrapedData?.servicesFound?.join(', ') || 'Freight & distribution'}
+- Scraped Web Summary: ${scrapedData?.description || scrapedData?.title || 'Commercial & Enterprise Operations'}
+- Detected Capabilities: ${scrapedData?.servicesFound?.join(', ') || 'Enterprise operations'}
 - Scraped Website Context:
 """
 ${scrapedData?.bodyText ? scrapedData.bodyText.substring(0, 2000) : 'No website content available; leverage industry standard intelligence for this company type.'}
@@ -54,10 +54,10 @@ ${scrapedData?.bodyText ? scrapedData.bodyText.substring(0, 2000) : 'No website 
 ### TASK:
 Analyze the lead's operational focus and produce a structured JSON response matching the following schema:
 {
-  "company_profile": "2-3 concise sentences summarizing what this prospect does, their operational scope, and their primary logistics footprint.",
-  "financial_info": "Observable scale indicators (e.g. estimated office count, fleet/warehouse presence, trade volume scale, or tier bracket).",
-  "email_subject": "A compelling, 4-8 word, curiosity-inducing cold email subject line customized to the prospect's company and trade lanes (avoid cheesy spam phrases).",
-  "email_body": "A tailored, high-converting B2B cold outreach email (approx 120-180 words). The email MUST:\n1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'the Logistics Lead'} naturally.\n2. Reference a specific aspect of ${lead.company_name}'s operations or trade lanes based on the scraped context.\n3. Clearly bridge how ${userProfile.company_name || 'our agency'}'s strengths (${Array.isArray(userProfile.services_offered) ? userProfile.services_offered.slice(0, 2).join(' & ') : 'Air & Ocean logistics'}) directly solve freight rate volatility, customs bottlenecks, or capacity constraints on their lanes.\n4. Include a low-friction call to action (e.g. sharing lane tariff benchmarks or a brief 10-minute discovery call).\n5. Conclude cleanly with the sender's full signature."
+  "company_profile": "2-3 concise sentences summarizing what this prospect does, their market focus, and their primary operational footprint.",
+  "financial_info": "Observable scale indicators (e.g. estimated office count, market presence, enterprise scale, or tier bracket).",
+  "email_subject": "A compelling, 4-8 word, curiosity-inducing cold email subject line customized to the prospect's company and operational focus (avoid cheesy spam phrases).",
+  "email_body": "A tailored, high-converting B2B cold outreach email (approx 120-180 words). The email MUST:\n1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally.\n2. Reference a specific aspect of ${lead.company_name}'s operations or market focus based on the scraped context.\n3. Clearly bridge how ${userProfile.company_name || 'our company'}'s strengths (${Array.isArray(userProfile.services_offered) ? userProfile.services_offered.slice(0, 2).join(' & ') : 'our solutions'}) directly address bottlenecks and deliver measurable value.\n4. Include a low-friction call to action (e.g. sharing relevant benchmarks or a brief 10-minute discovery call).\n5. Conclude cleanly with the sender's full signature."
 }
 
 Return ONLY valid JSON matching this exact structure.

@@ -209,10 +209,10 @@ export default function BrandProfilePage() {
         <div>
           <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <Building2 className="w-6 h-6 text-teal-600 dark:text-cyan-400" />
-            <span>Self Brand &amp; Trade Lane Profile</span>
+            <span>Self Brand &amp; Company Profile</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Define your freight forwarding capabilities, USPs, accreditations, and outgoing signature to power tailored AI outreach.
+            Define your company capabilities, USPs, accreditations, and outgoing signature to power tailored AI outreach.
           </p>
         </div>
 
@@ -284,14 +284,14 @@ export default function BrandProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Freight Forwarding Agency Name *
+                  Company / Business Name *
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.company_name}
                   onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                  placeholder="e.g. Anirise Logistics Pvt. Ltd."
+                  placeholder="e.g. DigiPresence Solutions"
                   className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
                 />
               </div>
@@ -305,7 +305,7 @@ export default function BrandProfilePage() {
                     type="text"
                     value={formData.website_url || ''}
                     onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
-                    placeholder="https://aniriselogistics.com/"
+                    placeholder="https://digipresencesolutions.com/"
                     className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
                   />
                 </div>
@@ -321,11 +321,11 @@ export default function BrandProfilePage() {
                 rows={3}
                 value={formData.unique_selling_proposition}
                 onChange={(e) => setFormData({ ...formData, unique_selling_proposition: e.target.value })}
-                placeholder="e.g. 23+ years of experience delivering fast, certified, and flexible global logistics. A client-centered, technology-driven approach offering highly personalized, end-to-end supply chain and warehousing solutions."
+                placeholder="e.g. Enterprise AI automation, custom digital marketing engines, and client acquisition pipelines with proven ROI."
                 className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none leading-relaxed"
               />
               <p className="text-[11px] text-slate-400 mt-1">
-                Gemini dynamically cites these differentiators when pitching to prospects with matching trade pain points.
+                Gemini dynamically cites these differentiators when pitching to prospects with matching business needs.
               </p>
             </div>
 
@@ -339,17 +339,17 @@ export default function BrandProfilePage() {
                 type="text"
                 value={formData.strengths_and_certifications}
                 onChange={(e) => setFormData({ ...formData, strengths_and_certifications: e.target.value })}
-                placeholder="e.g. IATA Cargo Agent, FIATA Member, WCA Partner, ISO 9001:2015, Customs Broker License"
+                placeholder="e.g. ISO 9001:2015, Google Premier Partner, HubSpot Certified, Enterprise Security Verified"
                 className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Card 2: Core Logistics Strengths */}
+          {/* Card 2: Core Services & Capabilities */}
           <div className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-md space-y-5 transition-colors">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
               <Plane className="w-4 h-4 text-teal-600 dark:text-cyan-400" />
-              <span>Core Logistics Services &amp; Capabilities</span>
+              <span>Core Business Services &amp; Capabilities</span>
             </h3>
 
             <div className="flex flex-wrap gap-2">
@@ -392,11 +392,11 @@ export default function BrandProfilePage() {
             </div>
           </div>
 
-          {/* Card 3: Target Trade Corridors */}
+          {/* Card 3: Target Markets & Corridors */}
           <div className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-md space-y-5 transition-colors">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
               <Globe2 className="w-4 h-4 text-amber-500" />
-              <span>Target Trade Lanes &amp; Corridors</span>
+              <span>Target Markets &amp; Client Segments</span>
             </h3>
 
             <div className="flex flex-wrap gap-2">

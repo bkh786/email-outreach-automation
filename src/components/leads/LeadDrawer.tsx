@@ -441,7 +441,7 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-teal-600 dark:text-cyan-400" />
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  AI Freight Intelligence & Scraped Footprint
+                  AI Company Intelligence & Scraped Footprint
                 </h4>
               </div>
 

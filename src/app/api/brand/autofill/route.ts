@@ -81,15 +81,15 @@ export async function POST(req: NextRequest) {
       const cleanedKey = activeKey.trim().replace(/^['"]|['"]$/g, '');
 
       const prompt = `
-You are an expert enterprise freight forwarding business development executive and brand strategist.
-Your task is to analyze the website content of a freight forwarding / logistics company and synthesize their official brand profile.
+You are an expert enterprise business development executive, copywriter, and brand strategist.
+Your task is to analyze the website content of a company and synthesize their official brand profile to power AI-driven cold email outreach.
 
 ### TARGET COMPANY CONTEXT:
 - Provided Website URL: ${targetUrl}
 - Company Name: ${cleanCompanyName}
 - Contact Person / Signatory: ${cleanContactPerson}
-- Scraped Page Title: ${scraped.title || 'Logistics & Supply Chain'}
-- Scraped Meta Description: ${scraped.description || 'International freight forwarding solutions'}
+- Scraped Page Title: ${scraped.title || 'Enterprise Business & Solutions'}
+- Scraped Meta Description: ${scraped.description || 'Enterprise solutions and professional services'}
 - Scraped Website Text:
 """
 ${scrapedContext.substring(0, 3000)}
@@ -99,27 +99,18 @@ ${scrapedContext.substring(0, 3000)}
 Synthesize a comprehensive, high-converting B2B brand profile in JSON format matching this exact schema:
 {
   "company_name": "${cleanCompanyName}",
-  "unique_selling_proposition": "A concise, impactful 2-3 sentence value proposition highlighting their speed, experience, proprietary advantages, client-centered approach, technology, or network reliability.",
-  "strengths_and_certifications": "Comma-separated list of accreditations, certifications, network licenses, and key credentials (e.g. IATA Cargo Agent, WCA Partner, FIATA Member, ISO 9001:2015, Customs Broker License, 20+ Years Experience).",
+  "unique_selling_proposition": "A concise, impactful 2-3 sentence value proposition highlighting their speed, experience, proprietary advantages, client-centered approach, technology, or domain reliability.",
+  "strengths_and_certifications": "Comma-separated list of accreditations, certifications, industry awards, and key credentials (e.g. ISO 9001:2015, Google Premier Partner, Industry Certified, Enterprise Tier).",
   "services_offered": [
-    "Customs Clearance & Bonded CFS",
-    "Air Freight Expedited & Charters",
-    "Ocean FCL & LCL Consolidation",
-    "Road Transport & Rail Freight",
-    "Warehousing & 3PL Distribution",
-    "Project Cargo & Heavy Lift",
-    "Cold Chain & Pharma Logistics",
-    "Cargo Insurance & Risk Management"
+    "Core Service 1",
+    "Core Service 2",
+    "Core Service 3"
   ],
   "target_markets": [
-    "India -> North America Air & Ocean FCL/LCL",
-    "India -> Europe Multimodal Corridors",
-    "India -> Middle East Supply Chain",
-    "Domestic Pan-India Road & Rail Transport",
-    "Asia -> North America",
-    "Europe -> North America"
+    "Target Market 1",
+    "Target Market 2"
   ],
-  "email_signature": "Best regards,\\n\\n${cleanContactPerson}\\n${cleanCompanyName}\\nEmail: info@${domainOnly}\\nPlot No-62 & 62A, Ground Floor, Block-WE, Mohan Garden, Uttam Nagar, New Delhi-110059 | Phone: +91-1143466415 | Website: ${targetUrl}"
+  "email_signature": "Best regards,\\n\\n${cleanContactPerson}\\n${cleanCompanyName}\\nEmail: info@${domainOnly}\\nPhone: +91-1143466415 | Website: ${targetUrl}"
 }
 
 Return ONLY valid JSON matching this schema without markdown code fences or conversational text.

@@ -54,7 +54,7 @@ export default function MetricsCards() {
       growth: '+100% deliverability',
     },
     {
-      title: 'Corridor Outreach Score',
+      title: 'Campaign Outreach Score',
       value: `${totalLeads > 0 ? (94.8).toFixed(1) : 0}%`,
       subtitle: 'Based on brand USP match',
       icon: TrendingUp,

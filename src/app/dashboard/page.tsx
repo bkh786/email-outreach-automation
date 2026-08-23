@@ -31,10 +31,10 @@ export default function DashboardPage() {
               <span>Autonomous Lead Enrichment Pipeline</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Scale Your Freight Forwarding Agency Outreach
+              Scale Your Business Outreach
             </h2>
             <p className="mt-2 text-sm text-teal-50 dark:text-slate-300 leading-relaxed">
-              Research prospect web footprints, extract trade corridor volumes, and automatically draft high-converting cold pitches personalized with <span className="font-bold underline text-white dark:text-cyan-400">{profile.company_name}</span>'s USPs.
+              Research prospect web footprints, extract company intelligence, and automatically draft high-converting cold pitches personalized with <span className="font-bold underline text-white dark:text-cyan-400">{profile.company_name}</span>'s USPs.
             </p>
           </div>
 
