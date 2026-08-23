@@ -53,6 +53,7 @@ export default function BrandProfilePage() {
   const [formData, setFormData] = useState<Profile>({ ...profile });
   const [newService, setNewService] = useState('');
   const [newMarket, setNewMarket] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isAutofilling, setIsAutofilling] = useState(false);
   const [autofillMessage, setAutofillMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -98,14 +99,23 @@ export default function BrandProfilePage() {
     setNewMarket('');
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await updateProfile(formData);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+  // Explicit Save & Sync Button Handler
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSaving(true);
+    try {
+      await updateProfile(formData);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3500);
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      alert('Failed to save profile: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Smart Fill with AI from Website Crawling
+  // Smart Fill with AI: Fills the fields ONLY, does NOT write to database directly
   const handleSmartAiAutofill = async () => {
     if (!formData.website_url || formData.website_url.trim().length < 3) {
       setAutofillMessage({
@@ -146,12 +156,12 @@ export default function BrandProfilePage() {
         email_signature: data.profile.email_signature || formData.email_signature,
       };
 
+      // Populate form state ONLY (does not save to DB until user clicks Save)
       setFormData(generatedProfile);
-      await updateProfile(generatedProfile);
 
       setAutofillMessage({
         type: 'success',
-        text: 'Website scraped & brand profile synthesized with Smart Fill with AI successfully!'
+        text: 'Fields populated with Smart AI! Review the details below and click "Save & Sync Self-Brand Profile" to save to the database.'
       });
     } catch (err: any) {
       setAutofillMessage({
@@ -209,7 +219,7 @@ export default function BrandProfilePage() {
         {isSaved && (
           <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold animate-in fade-in shadow-sm">
             <CheckCircle2 className="w-4 h-4" />
-            <span>Profile Synced to AI Engine &amp; Database!</span>
+            <span>Profile Saved to Database &amp; Synced to AI Engine!</span>
           </div>
         )}
       </div>
@@ -236,7 +246,7 @@ export default function BrandProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Profile Form */}
-        <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           {/* Card 1: Core Company Identity & Smart Fill with AI */}
           <div className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-md space-y-5 transition-colors">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 flex-wrap gap-2">
@@ -260,7 +270,7 @@ export default function BrandProfilePage() {
                 {isAutofilling ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Crawling &amp; Synthesizing with AI...</span>
+                    <span>Crawling &amp; Populating Fields...</span>
                   </>
                 ) : (
                   <>
@@ -450,17 +460,28 @@ export default function BrandProfilePage() {
             </div>
           </div>
 
-          {/* Save Button */}
-          <div className="flex items-center justify-end">
+          {/* Direct Action Button: Save & Sync Self-Brand Profile */}
+          <div className="flex items-center justify-end pt-2">
             <button
-              type="submit"
-              className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-700 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-500 text-white dark:text-slate-950 font-extrabold text-sm shadow-md shadow-teal-600/20 dark:shadow-cyan-500/25 active:scale-95 transition-all"
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-700 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-500 text-white dark:text-slate-950 font-extrabold text-sm shadow-lg shadow-teal-600/20 dark:shadow-cyan-500/25 active:scale-95 transition-all cursor-pointer"
             >
-              <Save className="w-4 h-4" />
-              <span>Save &amp; Sync Self-Brand Profile</span>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Saving to Database...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Save &amp; Sync Self-Brand Profile</span>
+                </>
+              )}
             </button>
           </div>
-        </form>
+        </div>
 
         {/* Live AI Prompt Benchmark Simulator (Updates live in real-time) */}
         <div className="space-y-6">
