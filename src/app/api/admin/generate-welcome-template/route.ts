@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getLiveGeminiModels } from '@/lib/gemini-models';
 
+import { DEFAULT_WELCOME_SUBJECT, DEFAULT_WELCOME_TEMPLATE } from '@/lib/welcome-constants';
+
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -49,39 +51,17 @@ export async function POST(req: NextRequest) {
     if (!apiKey || apiKey.trim() === '') {
       return NextResponse.json({
         success: true,
-        subject: 'Welcome to {{business_name}} — Your Logistics Automation Portal',
-        template: `Dear {{name}},
-
-Welcome to your dedicated Outreach & Lead Intelligence Workspace for {{business_name}}!
-
-Your isolated client tenant account has been provisioned and is ready for production outreach. You can access your portal to configure trade lanes, research target prospects, and automate client acquisition pipelines.
-
-Here are your account credentials:
----------------------------------------------
-• Portal URL: {{login_url}}
-• Login Email: {{login_email}}
-• Temporary Password: {{temporary_password}}
-• Registered Contact Number: {{contact_number}}
----------------------------------------------
-
-Next Steps:
-1. Log in to {{login_url}} using the credentials above.
-2. Update your temporary password under 'Settings & BYOK'.
-3. Configure your company outbound SMTP mail server to begin sending outreach.
-
-If you have any questions or require custom setup assistance, simply reply directly to this email or call our operations desk.
-
-Warm regards,
-Platform Operations Team`,
+        subject: DEFAULT_WELCOME_SUBJECT,
+        template: DEFAULT_WELCOME_TEMPLATE,
         modelUsed: 'default-fallback',
-        message: 'No active Gemini key found; restored high-converting default template.',
+        message: 'No active Gemini key found; restored high-converting default HTML template.',
       });
     }
 
     const cleanedKey = apiKey.trim().replace(/^['"]|['"]$/g, '');
     const candidateModels = await getLiveGeminiModels(cleanedKey);
 
-    const systemPrompt = `You are an elite B2B enterprise client onboarding specialist and executive copywriter.
+    const systemPrompt = `You are an elite B2B enterprise client onboarding specialist and executive HTML email designer.
 Your goal is to write or rewrite a welcome email template that Super Admins will send to newly created client tenants (freight forwarding companies, logistics agencies, and B2B enterprises) when their isolated portal account is provisioned.
 
 CRITICAL REQUIREMENTS:
@@ -93,21 +73,19 @@ CRITICAL REQUIREMENTS:
    - {{temporary_password}} (The temporary password for their account)
    - {{login_url}} (The platform login URL)
 
-2. Tone: Warm, professional, enterprise-grade, empowering, and action-oriented.
-3. Structure:
-   - Welcoming greeting to {{name}} representing {{business_name}}.
-   - Clear credential callout box with {{login_url}}, {{login_email}}, {{temporary_password}}, and {{contact_number}}.
-   - Brief 2-3 step onboarding guidance (e.g. logging in, updating password under Settings, connecting email dispatch).
-   - Frictionless closing inviting them to reply directly to the email if they need immediate support.
-   - Clean professional sign-off.
+2. Output Format:
+   - Provide a complete, modern, mobile-responsive HTML email template with inline styles (max-width: 600px, beautiful header, elegant credential table card with #0d9488 brand accents, clean call-to-action button to {{login_url}}, and professional footer).
+   - Use web-safe inline fonts: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif.
+
+3. Tone: Warm, executive, enterprise-grade, and action-oriented.
 
 ${promptInstructions ? `USER INSTRUCTION FOR REWRITE:\n"${promptInstructions}"\n` : ''}
-${currentTemplate ? `EXISTING DRAFT TO REFINE / ENHANCE:\n"""\n${currentTemplate}\n"""\n` : ''}
+${currentTemplate ? `EXISTING DRAFT TO REFINE / CONVERT TO HTML:\n"""\n${currentTemplate}\n"""\n` : ''}
 
 Respond with ONLY a valid JSON object matching this schema:
 {
   "subject": "A professional, clear, engaging subject line incorporating {{business_name}}",
-  "template": "The full email body template with all placeholder tags"
+  "template": "The full HTML email template with all placeholder tags and inline styles"
 }`;
 
     let generatedResult: { subject: string; template: string } | null = null;
@@ -133,7 +111,7 @@ Respond with ONLY a valid JSON object matching this schema:
                 contents: [{ parts: [{ text: systemPrompt }] }],
                 generationConfig: {
                   temperature: 0.3,
-                  maxOutputTokens: 1000,
+                  maxOutputTokens: 2000,
                   responseMimeType: 'application/json',
                 },
               }),
@@ -162,33 +140,10 @@ Respond with ONLY a valid JSON object matching this schema:
     }
 
     if (!generatedResult) {
-      // Return high-quality default synthesized template
       return NextResponse.json({
         success: true,
-        subject: 'Welcome to {{business_name}} — Your Outreach Portal Credentials',
-        template: `Dear {{name}},
-
-Welcome to {{business_name}}!
-
-Your dedicated client tenant workspace on the Outreach & Automation Portal is officially provisioned.
-
-Below are your initial login credentials to access your isolated workspace:
---------------------------------------------------
-• Portal Access URL: {{login_url}}
-• Registered Login Email: {{login_email}}
-• Temporary Password: {{temporary_password}}
-• Registered Contact Phone: {{contact_number}}
---------------------------------------------------
-
-Getting Started:
-1. Log in at {{login_url}} with your email and temporary password.
-2. Update your security password under 'Settings & BYOK'.
-3. Set up your outbound email dispatch server to begin automating cold outreach.
-
-Should you need any assistance, feel free to reply directly to this email or call our desk at {{contact_number}}.
-
-Best regards,
-Operations & Platform Team`,
+        subject: DEFAULT_WELCOME_SUBJECT,
+        template: DEFAULT_WELCOME_TEMPLATE,
         modelUsed: 'template-synthesizer',
       });
     }

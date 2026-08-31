@@ -21,10 +21,13 @@ import {
   ShieldCheck,
   FileText,
   Check,
-  Eye
+  Eye,
+  Code2
 } from 'lucide-react';
 import { useApp } from '@/lib/store/app-context';
 import { UserConfig } from '@/lib/types';
+import { HtmlEmailPreview } from '@/components/common/HtmlEmailPreview';
+import { DEFAULT_SAMPLE_DATA } from '@/lib/email-formatter';
 
 interface SmtpPreset {
   id: string;
@@ -726,28 +729,73 @@ export default function SettingsPage() {
 
             {/* Email Body Window */}
             <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                   <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
-                  <span>Welcome Message Body Template (Markdown / Plaintext)</span>
+                  <span>Welcome Message Body Template (HTML &amp; Responsive Layout Supported)</span>
                 </label>
-                <span className="text-[11px] text-slate-400">
-                  {welcomeTemplate ? `${welcomeTemplate.length} chars` : 'Blank Template'}
-                </span>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-400">
+                    {welcomeTemplate ? `${welcomeTemplate.length} chars` : 'Blank Template'}
+                  </span>
+                  <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingTemplate(true)}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                        isEditingTemplate
+                          ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-cyan-300 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      <Code2 className="w-3 h-3" />
+                      <span>Edit HTML / Code</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingTemplate(false)}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                        !isEditingTemplate
+                          ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-cyan-300 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>Live HTML Preview</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {isEditingTemplate || !welcomeTemplate ? (
-                <textarea
-                  rows={12}
-                  value={welcomeTemplate}
-                  onChange={(e) => setWelcomeTemplate(e.target.value)}
-                  placeholder="Click 'Rewrite with Gemini' above to generate a welcome template or type your message here with dynamic tags: {{name}}, {{business_name}}, {{contact_number}}, {{login_email}}, {{temporary_password}}..."
-                  className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-slate-900 dark:text-white font-mono text-xs focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none transition-colors leading-relaxed shadow-inner"
-                />
-              ) : (
-                <div className="w-full bg-slate-50 dark:bg-[#080D18] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 text-slate-800 dark:text-slate-200 text-xs whitespace-pre-wrap leading-relaxed shadow-inner">
-                  {welcomeTemplate}
+              {isEditingTemplate ? (
+                <div className="space-y-2">
+                  <textarea
+                    rows={14}
+                    value={welcomeTemplate}
+                    onChange={(e) => setWelcomeTemplate(e.target.value)}
+                    placeholder="Enter HTML or text with dynamic tokens: {{name}}, {{business_name}}, {{contact_number}}, {{login_email}}, {{temporary_password}}, {{login_url}}..."
+                    className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-slate-900 dark:text-white font-mono text-xs focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none transition-colors leading-relaxed shadow-inner"
+                  />
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
+                    <span>Pro tip: You can write full HTML with inline styles or click <strong>Live HTML Preview</strong> to see the rendered email in real time.</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingTemplate(false)}
+                      className="text-teal-600 dark:text-cyan-400 hover:underline font-semibold"
+                    >
+                      Switch to Visual Preview &rarr;
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <HtmlEmailPreview
+                  content={welcomeTemplate}
+                  sampleData={DEFAULT_SAMPLE_DATA}
+                  title="Tenant Welcome Email Live Preview"
+                  minHeight="420px"
+                  allowToggleView={true}
+                />
               )}
             </div>
 
@@ -755,9 +803,9 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between pt-2 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
               <span className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
-                <span>Triggers via configured Outbound SMTP whenever a new client tenant is provisioned</span>
+                <span>Full HTML and mobile responsive rendering enabled with dynamic placeholder interpolation</span>
               </span>
-              <span>All placeholders will be automatically populated with the tenant's details</span>
+              <span>Triggers via configured Outbound SMTP whenever a new client tenant is provisioned</span>
             </div>
           </div>
         )}

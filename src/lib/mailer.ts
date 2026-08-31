@@ -52,18 +52,43 @@ export async function sendEmail({
       ? `"${config.fromName}" <${config.fromEmail || config.user}>`
       : (config.fromEmail || config.user);
 
-    // Convert plain text newlines into HTML paragraphs while preserving plain text
-    const htmlBody = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #222222; max-width: 600px;">
-        ${body.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>')}
-      </div>
-    `;
+    // Check if the body contains HTML tags
+    const isHtml = /<[a-z][\s\S]*>/i.test(body);
+
+    let htmlBody = '';
+    let textBody = '';
+
+    if (isHtml) {
+      htmlBody = body;
+      // Convert HTML to simple plain text alternative for email clients that don't support HTML
+      textBody = body
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<\/p>|<\/div>|<\/tr>|<br\s*\/?>/gi, '\n')
+        .replace(/<\/td>|<\/th>/gi, '  ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\n\s*\n\s*\n/g, '\n\n')
+        .trim();
+    } else {
+      textBody = body;
+      htmlBody = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #222222; max-width: 600px;">
+          ${body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>')}
+        </div>
+      `;
+    }
 
     const mailOptions: any = {
       from: fromAddress,
       to,
       subject,
-      text: body,
+      text: textBody,
       html: htmlBody,
     };
 

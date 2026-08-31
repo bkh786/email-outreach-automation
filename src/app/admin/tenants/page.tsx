@@ -21,6 +21,7 @@ import {
   Search
 } from 'lucide-react';
 import { Tenant } from '@/lib/types';
+import { HtmlEmailPreview } from '@/components/common/HtmlEmailPreview';
 
 export default function AdminTenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -558,15 +559,19 @@ export default function AdminTenantsPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider">
-                Populated Email Body (Template Fetched &amp; Injected):
+                Populated Email Body (Template Fetched, Injected &amp; HTML Rendered):
               </span>
-              <span className="text-[11px] text-slate-400">
-                Rendered with dynamic tenant tokens
+              <span className="text-[11px] text-teal-600 dark:text-cyan-400 font-medium">
+                Live interactive email rendering (HTML enabled)
               </span>
             </div>
-            <div className="p-6 rounded-2xl bg-slate-50 dark:bg-[#080D18] border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans leading-relaxed shadow-inner">
-              {activeWelcomeEmail.body}
-            </div>
+
+            <HtmlEmailPreview
+              content={activeWelcomeEmail.body}
+              title={`Welcome Email for ${activeWelcomeEmail.to}`}
+              minHeight="420px"
+              allowToggleView={true}
+            />
           </div>
         </div>
       )}

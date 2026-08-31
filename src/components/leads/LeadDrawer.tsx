@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Lead, LeadStatus } from '@/lib/types';
 import { useApp } from '@/lib/store/app-context';
+import { HtmlEmailPreview } from '@/components/common/HtmlEmailPreview';
 
 interface LeadDrawerProps {
   leadId: string | null;
@@ -537,9 +538,12 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
               </div>
 
               {isPreviewMode ? (
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-white text-slate-900 text-xs font-sans leading-relaxed min-h-[220px] shadow-inner whitespace-pre-wrap select-text border border-slate-200 dark:border-transparent">
-                  {body || <span className="text-slate-400 italic">No email draft generated yet.</span>}
-                </div>
+                <HtmlEmailPreview
+                  content={body || '<p style="color: #94a3b8; font-style: italic;">No email draft generated yet.</p>'}
+                  title="Lead Email Preview"
+                  minHeight="260px"
+                  allowToggleView={true}
+                />
               ) : (
                 <textarea
                   value={body}
