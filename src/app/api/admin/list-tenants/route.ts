@@ -42,6 +42,8 @@ export async function GET(req: NextRequest) {
         stats,
         services_offered: p?.services_offered || [],
         target_markets: p?.target_markets || [],
+        contact_person: p?.contact_person || u.user_metadata?.contact_person || u.user_metadata?.full_name || '',
+        contact_number: u.user_metadata?.contact_number || (p as any)?.phone || '',
       };
     });
 

@@ -15,7 +15,13 @@ import {
   Sliders,
   Lock,
   Info,
-  Server
+  Server,
+  Sparkles,
+  Edit3,
+  ShieldCheck,
+  FileText,
+  Check,
+  Eye
 } from 'lucide-react';
 import { useApp } from '@/lib/store/app-context';
 import { UserConfig } from '@/lib/types';
@@ -89,7 +95,14 @@ const SMTP_PRESETS: SmtpPreset[] = [
 ];
 
 export default function SettingsPage() {
-  const { userConfig, updateUserConfig, resetToDemoData } = useApp();
+  const { userConfig, updateUserConfig, resetToDemoData, profile, currentUserEmail } = useApp();
+
+  const isSuperAdmin = 
+    profile.role === 'super_admin' || 
+    profile.role === 'admin' || 
+    currentUserEmail === 'bkh786@gmail.com' || 
+    currentUserEmail === 'admin@freightpulse.ai' || 
+    currentUserEmail === 'admin@marketpulse.ai';
 
   const [formData, setFormData] = useState<UserConfig>({ ...userConfig });
   const [selectedPresetId, setSelectedPresetId] = useState<string>('gmail');
@@ -105,11 +118,40 @@ export default function SettingsPage() {
   const [testRecipientEmail, setTestRecipientEmail] = useState(userConfig.from_email || '');
   const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Welcome Email Template State (Super Admin Only)
+  const [welcomeSubject, setWelcomeSubject] = useState('Welcome to {{business_name}} — Your Outreach Portal Credentials');
+  const [welcomeTemplate, setWelcomeTemplate] = useState('');
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+  const [isRewritingTemplate, setIsRewritingTemplate] = useState(false);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateFeedback, setTemplateFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Load welcome email template on initial mount
+  useEffect(() => {
+    if (isSuperAdmin) {
+      fetch('/api/admin/welcome-template')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            if (data.subject) setWelcomeSubject(data.subject);
+            if (data.template) setWelcomeTemplate(data.template);
+          }
+        })
+        .catch(err => console.error('Failed to load welcome template:', err));
+    }
+  }, [isSuperAdmin]);
+
   // Synchronize form whenever userConfig loads or updates from database
   useEffect(() => {
     setFormData({ ...userConfig });
     if (userConfig.from_email && !testRecipientEmail) {
       setTestRecipientEmail(userConfig.from_email);
+    }
+    if (userConfig.welcome_email_subject && !welcomeSubject) {
+      setWelcomeSubject(userConfig.welcome_email_subject);
+    }
+    if (userConfig.welcome_email_template && !welcomeTemplate) {
+      setWelcomeTemplate(userConfig.welcome_email_template);
     }
     // Auto-detect preset if matches
     const matched = SMTP_PRESETS.find(p => p.host && p.host.toLowerCase() === (userConfig.smtp_host || '').toLowerCase());
@@ -119,6 +161,81 @@ export default function SettingsPage() {
       setSelectedPresetId('custom');
     }
   }, [userConfig]);
+
+  const handleRewriteWithGemini = async () => {
+    setIsRewritingTemplate(true);
+    setTemplateFeedback(null);
+    try {
+      const res = await fetch('/api/admin/generate-welcome-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentTemplate: welcomeTemplate,
+          promptInstructions: 'Create a warm, highly professional, enterprise-grade welcome and onboarding email template for new freight forwarding and B2B client tenants. Clearly highlight their login credentials and direct access portal.',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to rewrite with Gemini');
+      }
+
+      if (data.subject) setWelcomeSubject(data.subject);
+      if (data.template) setWelcomeTemplate(data.template);
+      setIsEditingTemplate(true);
+      setTemplateFeedback({
+        success: true,
+        message: 'Welcome message successfully written by Gemini AI! Review, edit if needed, and click Save.',
+      });
+      setTimeout(() => setTemplateFeedback(null), 5000);
+    } catch (err: any) {
+      setTemplateFeedback({
+        success: false,
+        message: err.message || 'Gemini rewrite failed',
+      });
+    } finally {
+      setIsRewritingTemplate(false);
+    }
+  };
+
+  const handleSaveWelcomeTemplate = async () => {
+    setIsSavingTemplate(true);
+    setTemplateFeedback(null);
+    try {
+      const res = await fetch('/api/admin/welcome-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: welcomeSubject,
+          template: welcomeTemplate,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save welcome template');
+      }
+
+      setIsEditingTemplate(false);
+      setTemplateFeedback({
+        success: true,
+        message: 'Welcome Email Template saved successfully! New tenants will receive this template automatically upon creation.',
+      });
+      setTimeout(() => setTemplateFeedback(null), 4000);
+    } catch (err: any) {
+      setTemplateFeedback({
+        success: false,
+        message: err.message || 'Failed to save template',
+      });
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const insertVariable = (tag: string) => {
+    setWelcomeTemplate(prev => prev + ` ${tag} `);
+    setIsEditingTemplate(true);
+  };
 
   const handleApplyPreset = (preset: SmtpPreset) => {
     setSelectedPresetId(preset.id);
@@ -488,6 +605,162 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Super Admin Welcome Email Template Section */}
+        {isSuperAdmin && (
+          <div className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#0F172A] border border-teal-200/70 dark:border-cyan-500/30 shadow-lg space-y-6 transition-all relative overflow-hidden">
+            {/* Ambient background glow */}
+            <div className="absolute -right-20 -top-20 w-64 h-64 bg-teal-500/5 dark:bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Header with Title & Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-teal-50 dark:bg-cyan-500/10 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30 flex items-center justify-center shadow-sm">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      Tenant Onboarding Welcome Email Template
+                    </h3>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-mono">
+                      Super Admin Only
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Automatically triggered and populated with tenant credentials upon client creation via configured outbound SMTP.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons: Rewrite with Gemini, Edit, Save */}
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleRewriteWithGemini}
+                  disabled={isRewritingTemplate}
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 active:scale-95 transition-all disabled:opacity-50"
+                  title="Generate or optimize welcome copy using Google Gemini AI"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${isRewritingTemplate ? 'animate-spin' : ''}`} />
+                  <span>{isRewritingTemplate ? 'Rewriting with Gemini...' : 'Rewrite with Gemini'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEditingTemplate(!isEditingTemplate)}
+                  className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    isEditingTemplate
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {isEditingTemplate ? <Eye className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
+                  <span>{isEditingTemplate ? 'Preview Template' : 'Edit Template'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveWelcomeTemplate}
+                  disabled={isSavingTemplate}
+                  className="px-4 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30 font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                >
+                  <Save className={`w-3.5 h-3.5 ${isSavingTemplate ? 'animate-spin' : ''}`} />
+                  <span>{isSavingTemplate ? 'Saving...' : 'Save Template'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Feedback alert */}
+            {templateFeedback && (
+              <div className={`p-3.5 rounded-xl border text-xs flex items-center gap-2.5 ${
+                templateFeedback.success
+                  ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-medium'
+                  : 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 font-medium'
+              }`}>
+                {templateFeedback.success ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+                <span>{templateFeedback.message}</span>
+              </div>
+            )}
+
+            {/* Dynamic Variable Chips */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Click to Insert Dynamic Tenant Field:
+              </span>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  { tag: '{{name}}', label: 'Contact Person Name' },
+                  { tag: '{{business_name}}', label: 'Tenant Company Name' },
+                  { tag: '{{contact_number}}', label: 'Phone / Contact Number' },
+                  { tag: '{{login_email}}', label: 'Login Email' },
+                  { tag: '{{temporary_password}}', label: 'Temporary Password' },
+                  { tag: '{{login_url}}', label: 'Portal Login Link' },
+                ].map((item) => (
+                  <button
+                    key={item.tag}
+                    type="button"
+                    onClick={() => insertVariable(item.tag)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 hover:bg-teal-50 dark:hover:bg-cyan-500/20 text-slate-700 dark:text-slate-300 hover:text-teal-700 dark:hover:text-cyan-300 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-cyan-500/40 text-[11px] font-mono transition-all"
+                  >
+                    <span>{item.tag}</span>
+                    <span className="text-[10px] text-slate-400 font-sans">({item.label})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Email Subject Line */}
+            <div className="space-y-1.5 text-xs">
+              <label className="block font-bold text-slate-700 dark:text-slate-300">
+                Welcome Email Subject Line
+              </label>
+              <input
+                type="text"
+                value={welcomeSubject}
+                onChange={(e) => setWelcomeSubject(e.target.value)}
+                placeholder="Welcome to {{business_name}} — Your Outreach Portal Credentials"
+                className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-medium focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Email Body Window */}
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
+                  <span>Welcome Message Body Template (Markdown / Plaintext)</span>
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  {welcomeTemplate ? `${welcomeTemplate.length} chars` : 'Blank Template'}
+                </span>
+              </div>
+
+              {isEditingTemplate || !welcomeTemplate ? (
+                <textarea
+                  rows={12}
+                  value={welcomeTemplate}
+                  onChange={(e) => setWelcomeTemplate(e.target.value)}
+                  placeholder="Click 'Rewrite with Gemini' above to generate a welcome template or type your message here with dynamic tags: {{name}}, {{business_name}}, {{contact_number}}, {{login_email}}, {{temporary_password}}..."
+                  className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-slate-900 dark:text-white font-mono text-xs focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none transition-colors leading-relaxed shadow-inner"
+                />
+              ) : (
+                <div className="w-full bg-slate-50 dark:bg-[#080D18] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 text-slate-800 dark:text-slate-200 text-xs whitespace-pre-wrap leading-relaxed shadow-inner">
+                  {welcomeTemplate}
+                </div>
+              )}
+            </div>
+
+            {/* Info footer */}
+            <div className="flex items-center justify-between pt-2 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
+                <span>Triggers via configured Outbound SMTP whenever a new client tenant is provisioned</span>
+              </span>
+              <span>All placeholders will be automatically populated with the tenant's details</span>
+            </div>
+          </div>
+        )}
 
         {/* Card 3: Automation Preferences & Throttling */}
         <div className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-md space-y-6 transition-colors">

@@ -31,6 +31,8 @@ export interface Tenant {
   };
   services_offered?: string[];
   target_markets?: string[];
+  contact_number?: string;
+  contact_person?: string;
 }
 
 export interface UserConfig {
@@ -44,6 +46,8 @@ export interface UserConfig {
   from_name?: string;
   from_email?: string;
   portfolio_url?: string;
+  welcome_email_subject?: string;
+  welcome_email_template?: string;
   auto_send_enabled?: boolean;
   max_daily_emails?: number;
   max_hourly_rate?: number;
