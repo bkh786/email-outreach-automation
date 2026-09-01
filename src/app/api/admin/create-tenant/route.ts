@@ -92,21 +92,6 @@ export async function POST(req: NextRequest) {
         if (configs[0].welcome_email_subject) {
           rawSubject = configs[0].welcome_email_subject;
         }
-      } else {
-        // Check super admin user metadata
-        const { data: { users } } = await supabase.auth.admin.listUsers();
-        const superAdmin = users.find(
-          u => u.user_metadata?.role === 'super_admin' || 
-               u.email === 'bkh786@gmail.com' || 
-               u.email === 'admin@marketpulse.ai' ||
-               u.email === 'admin@freightpulse.ai'
-        );
-        if (superAdmin?.user_metadata?.welcome_email_template) {
-          rawTemplate = superAdmin.user_metadata.welcome_email_template;
-          if (superAdmin.user_metadata.welcome_email_subject) {
-            rawSubject = superAdmin.user_metadata.welcome_email_subject;
-          }
-        }
       }
     } catch (e) {
       console.error('Error loading template for tenant welcome:', e);

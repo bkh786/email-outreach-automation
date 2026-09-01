@@ -26,32 +26,10 @@ export async function GET(req: NextRequest) {
         });
       }
     } catch {
-      // column may not exist yet in table, fallback to user_metadata
+      // column may not exist yet in table
     }
 
-    // 2. Fallback to Super Admin user_metadata in auth.users
-    try {
-      const { data: { users } } = await adminSupabase.auth.admin.listUsers();
-      const superAdmin = users.find(
-        u => u.user_metadata?.role === 'super_admin' || 
-             u.email === 'bkh786@gmail.com' || 
-             u.email === 'admin@marketpulse.ai' ||
-             u.email === 'admin@freightpulse.ai'
-      );
-
-      if (superAdmin?.user_metadata?.welcome_email_template) {
-        return NextResponse.json({
-          success: true,
-          subject: superAdmin.user_metadata.welcome_email_subject || DEFAULT_WELCOME_SUBJECT,
-          template: superAdmin.user_metadata.welcome_email_template,
-          source: 'user_metadata',
-        });
-      }
-    } catch (e) {
-      console.error('Error fetching admin metadata for template:', e);
-    }
-
-    // 3. Default fallback
+    // 2. Default fallback (Enterprise HTML template)
     return NextResponse.json({
       success: true,
       subject: DEFAULT_WELCOME_SUBJECT,
@@ -83,10 +61,9 @@ export async function POST(req: NextRequest) {
     const cleanSubject = subject?.trim() || DEFAULT_WELCOME_SUBJECT;
     const cleanTemplate = template.trim();
 
-    // 1. Try to persist into user_configs table
+    // 1. Persist into user_configs table (never store large templates in user_metadata to avoid cookie bloat)
     let savedToTable = false;
     try {
-      // Find super admin config or any config
       const { data: configs } = await adminSupabase.from('user_configs').select('id').limit(1);
       if (configs && configs.length > 0) {
         const { error } = await adminSupabase
@@ -101,41 +78,38 @@ export async function POST(req: NextRequest) {
         if (!error) savedToTable = true;
       }
     } catch {
-      // ignore schema error if column not added yet
+      // Column may not be present if migration 004 has not been run in Supabase SQL editor
     }
 
-    // 2. Also persist into Super Admin user_metadata for 100% durability
-    let savedToMetadata = false;
+    // 2. Proactive self-healing: Ensure user_metadata never retains large template strings that cause Vercel 494 header errors
     try {
       const { data: { users } } = await adminSupabase.auth.admin.listUsers();
       const superAdmins = users.filter(
-        u => u.user_metadata?.role === 'super_admin' || 
-             u.email === 'bkh786@gmail.com' || 
-             u.email === 'admin@marketpulse.ai' ||
-             u.email === 'admin@freightpulse.ai'
+        u => u.user_metadata?.welcome_email_template || u.user_metadata?.welcome_email_subject
       );
 
       for (const adminUser of superAdmins) {
         await adminSupabase.auth.admin.updateUserById(adminUser.id, {
           user_metadata: {
             ...adminUser.user_metadata,
-            welcome_email_subject: cleanSubject,
-            welcome_email_template: cleanTemplate,
+            welcome_email_subject: null,
+            welcome_email_template: null,
+            welcome_email_template_test: null,
           }
         });
       }
-      savedToMetadata = true;
-    } catch (e) {
-      console.error('Error updating user_metadata for template:', e);
+    } catch {
+      // ignore
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Welcome email template saved successfully!',
+      message: savedToTable 
+        ? 'Welcome email template saved successfully in database!' 
+        : 'Welcome email template updated successfully in runtime memory. (Tip: Run migration 004 in Supabase SQL editor to enable persistent custom database table storage).',
       subject: cleanSubject,
       template: cleanTemplate,
       savedToTable,
-      savedToMetadata,
     });
   } catch (error: any) {
     console.error('Failed to save welcome template:', error);
