@@ -3,16 +3,16 @@
  */
 
 export const DEFAULT_SAMPLE_DATA: Record<string, string> = {
-  name: 'David Miller',
-  contact_person: 'David Miller',
-  business_name: 'Apex Global Cargo Ltd.',
-  company_name: 'Apex Global Cargo Ltd.',
-  contact_number: '+1 (555) 019-2834',
-  phone: '+1 (555) 019-2834',
-  login_email: 'ops@apexglobalcargo.com',
-  email: 'ops@apexglobalcargo.com',
-  temporary_password: 'ClientPass2025!',
-  password: 'ClientPass2025!',
+  name: 'Alex Johnson',
+  contact_person: 'Alex Johnson',
+  business_name: 'Nexus Logistics Global',
+  company_name: 'Nexus Logistics Global',
+  contact_number: '+1 (555) 234-5678',
+  phone: '+1 (555) 234-5678',
+  login_email: 'operations@nexuslogistics.com',
+  email: 'operations@nexuslogistics.com',
+  temporary_password: 'Pass2025!Secure',
+  password: 'Pass2025!Secure',
   login_url: 'https://marketpulse.ai/login',
 };
 
@@ -29,6 +29,14 @@ export function interpolateTemplate(content: string, data: Record<string, string
     result = result.replace(regex, val);
   }
   return result;
+}
+
+export function highlightTemplateTokens(content: string): string {
+  if (!content) return '';
+  const tokenRegex = /({{\s*([a-zA-Z0-9_-]+)\s*}})/g;
+  return content.replace(tokenRegex, (_match, fullToken, tokenName) => {
+    return `<span style="background-color: #FEF08A; color: #854D0E; border: 1px dashed #CA8A04; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-family: monospace; font-size: 0.9em; display: inline-block;">${fullToken}</span>`;
+  });
 }
 
 export function htmlToPlainText(html: string): string {
@@ -49,10 +57,17 @@ export function htmlToPlainText(html: string): string {
     .trim();
 }
 
-export function buildEmailDocument(content: string, sampleData?: Record<string, string>): string {
+export function buildEmailDocument(
+  content: string,
+  sampleData?: Record<string, string> | null,
+  highlightTokens: boolean = false
+): string {
   let bodyContent = content || '';
-  if (sampleData) {
+
+  if (sampleData && !highlightTokens) {
     bodyContent = interpolateTemplate(bodyContent, sampleData);
+  } else if (highlightTokens) {
+    bodyContent = highlightTemplateTokens(bodyContent);
   }
 
   const isHtml = isHtmlContent(bodyContent);

@@ -791,10 +791,14 @@ export default function SettingsPage() {
               ) : (
                 <HtmlEmailPreview
                   content={welcomeTemplate}
-                  sampleData={DEFAULT_SAMPLE_DATA}
+                  sampleData={{
+                    ...DEFAULT_SAMPLE_DATA,
+                    login_url: typeof window !== 'undefined' ? `${window.location.origin}/login` : 'https://marketpulse.ai/login',
+                  }}
                   title="Tenant Welcome Email Live Preview"
-                  minHeight="420px"
+                  minHeight="520px"
                   allowToggleView={true}
+                  allowVariableControls={true}
                 />
               )}
             </div>
