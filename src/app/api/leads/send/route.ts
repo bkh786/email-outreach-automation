@@ -45,6 +45,10 @@ export async function POST(req: NextRequest) {
       secure: userConfig.smtp_secure ?? false,
       fromName: userConfig.from_name || profile?.company_name || 'Freight Operations',
       fromEmail: userConfig.from_email || userConfig.smtp_user,
+      cc_enabled: Boolean(userConfig.cc_enabled),
+      cc_emails: userConfig.cc_emails || '',
+      bcc_enabled: Boolean(userConfig.bcc_enabled),
+      bcc_emails: userConfig.bcc_emails || '',
     };
 
     const dispatchResult = await sendEmail({

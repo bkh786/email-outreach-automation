@@ -429,25 +429,31 @@ export default function BrandProfilePage() {
             </div>
           </div>
 
-          {/* Card 4: Standard Email Signature */}
-          <div className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-md space-y-4 transition-colors">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <FileText className="w-4 h-4 text-teal-600 dark:text-cyan-400" />
-              <span>Standard Outgoing Email Signature</span>
-            </h3>
-
-            <div className="text-xs space-y-1.5">
-              <textarea
-                rows={6}
-                value={formData.email_signature}
-                onChange={(e) => setFormData({ ...formData, email_signature: e.target.value })}
-                placeholder={`Thanks & Regards\nOperations & Growth Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | https://www.digipresence.in\nLinkedIn: https://linkedin.com/company/digipresence-solutions`}
-                className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono leading-relaxed text-xs"
-              />
-              <p className="text-[11px] text-slate-400">
-                Pattern: Thanks &amp; Regards &bull; [Name / Team] &bull; [Company Name] &bull; [Email] &bull; [Address | Phone | Website] &bull; [Portfolio / Social Links]
-              </p>
+          {/* Email Signature Location Update Banner */}
+          <div className="rounded-3xl p-6 bg-slate-50 dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-cyan-500/10 border border-teal-200 dark:border-cyan-500/20 flex items-center justify-center text-teal-600 dark:text-cyan-400 flex-shrink-0">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>Standard Outgoing Email Signature</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 dark:bg-cyan-500/20 text-teal-800 dark:text-cyan-300 font-semibold">
+                    Moved to Settings &amp; BYOK
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Standard outgoing signature and automated Cc &amp; Bcc are now configured under SMTP settings in <strong>Settings &amp; BYOK</strong> to manage all outbound dispatch preferences in one place.
+                </p>
+              </div>
             </div>
+
+            <Link
+              href="/settings"
+              className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 flex-shrink-0"
+            >
+              <span>Manage in Settings &rarr;</span>
+            </Link>
           </div>
 
           {/* Direct Action Button: Save & Sync Self-Brand Profile */}

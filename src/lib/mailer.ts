@@ -92,6 +92,28 @@ export async function sendEmail({
       html: htmlBody,
     };
 
+    // Attach CC recipients if enabled
+    if (config.cc_enabled && config.cc_emails) {
+      const ccList = config.cc_emails
+        .split(/[,;\s]+/)
+        .map(e => e.trim())
+        .filter(e => e.includes('@'));
+      if (ccList.length > 0) {
+        mailOptions.cc = ccList;
+      }
+    }
+
+    // Attach BCC recipients if enabled
+    if (config.bcc_enabled && config.bcc_emails) {
+      const bccList = config.bcc_emails
+        .split(/[,;\s]+/)
+        .map(e => e.trim())
+        .filter(e => e.includes('@'));
+      if (bccList.length > 0) {
+        mailOptions.bcc = bccList;
+      }
+    }
+
     if (Array.isArray(config.attachments) && config.attachments.length > 0) {
       mailOptions.attachments = config.attachments;
     }

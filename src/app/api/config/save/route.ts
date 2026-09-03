@@ -44,7 +44,19 @@ export async function POST(req: NextRequest) {
       ? (typeof newGeminiKey === 'string' ? newGeminiKey.trim().replace(/^['"]|['"]$/g, '') : newGeminiKey)
       : (existingConfig?.gemini_api_key || '');
 
-    const upsertPayload = {
+    // Sync email_signature to profiles table if provided
+    if (config?.email_signature !== undefined && userId) {
+      try {
+        await adminSupabase.from('profiles').update({
+          email_signature: config.email_signature,
+          updated_at: new Date().toISOString(),
+        }).eq('id', userId);
+      } catch (err) {
+        console.error('Error syncing email_signature to profiles table:', err);
+      }
+    }
+
+    const baseUpsertPayload: Record<string, any> = {
       id: userId,
       gemini_api_key: finalGeminiKey,
       smtp_host: config?.smtp_host ?? existingConfig?.smtp_host ?? 'smtp.gmail.com',
@@ -60,11 +72,48 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data: savedData, error: saveError } = await adminSupabase
+    const fullUpsertPayload: Record<string, any> = {
+      ...baseUpsertPayload,
+      cc_enabled: config?.cc_enabled !== undefined ? Boolean(config.cc_enabled) : (existingConfig?.cc_enabled ?? false),
+      cc_emails: config?.cc_emails !== undefined ? String(config.cc_emails) : (existingConfig?.cc_emails ?? ''),
+      bcc_enabled: config?.bcc_enabled !== undefined ? Boolean(config.bcc_enabled) : (existingConfig?.bcc_enabled ?? false),
+      bcc_emails: config?.bcc_emails !== undefined ? String(config.bcc_emails) : (existingConfig?.bcc_emails ?? ''),
+      email_signature: config?.email_signature !== undefined ? String(config.email_signature) : (existingConfig?.email_signature ?? ''),
+    };
+
+    let savedData: any = null;
+    let saveError: any = null;
+
+    // First attempt: try saving with new CC/BCC and signature columns
+    const { data: fullData, error: fullError } = await adminSupabase
       .from('user_configs')
-      .upsert(upsertPayload, { onConflict: 'id' })
+      .upsert(fullUpsertPayload, { onConflict: 'id' })
       .select()
       .single();
+
+    if (!fullError) {
+      savedData = fullData;
+    } else {
+      // Fallback: save standard base columns if new columns have not been added yet via migration
+      const { data: baseData, error: baseError } = await adminSupabase
+        .from('user_configs')
+        .upsert(baseUpsertPayload, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (baseError) {
+        saveError = baseError;
+      } else {
+        savedData = {
+          ...baseData,
+          cc_enabled: fullUpsertPayload.cc_enabled,
+          cc_emails: fullUpsertPayload.cc_emails,
+          bcc_enabled: fullUpsertPayload.bcc_enabled,
+          bcc_emails: fullUpsertPayload.bcc_emails,
+          email_signature: fullUpsertPayload.email_signature,
+        };
+      }
+    }
 
     if (saveError) {
       console.error('Supabase user_configs database save error:', saveError);

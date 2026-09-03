@@ -45,6 +45,11 @@ export interface UserConfig {
   smtp_secure?: boolean;
   from_name?: string;
   from_email?: string;
+  email_signature?: string;
+  cc_enabled?: boolean;
+  cc_emails?: string;
+  bcc_enabled?: boolean;
+  bcc_emails?: string;
   portfolio_url?: string;
   welcome_email_subject?: string;
   welcome_email_template?: string;
@@ -110,6 +115,11 @@ export interface SmtpConfig {
   secure?: boolean;
   fromName: string;
   fromEmail: string;
+  email_signature?: string;
+  cc_enabled?: boolean;
+  cc_emails?: string;
+  bcc_enabled?: boolean;
+  bcc_emails?: string;
   attachments?: Array<{
     filename: string;
     path?: string;

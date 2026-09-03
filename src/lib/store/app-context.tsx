@@ -49,6 +49,11 @@ const DEFAULT_USER_CONFIG: UserConfig = {
   smtp_secure: false,
   from_name: 'Outreach Operations',
   from_email: '',
+  email_signature: 'Thanks & Regards\nOperations & Growth Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | https://www.digipresence.in\nLinkedIn: https://linkedin.com/company/digipresence-solutions',
+  cc_enabled: false,
+  cc_emails: '',
+  bcc_enabled: false,
+  bcc_emails: '',
   auto_send_enabled: false,
   max_daily_emails: 50,
   max_hourly_rate: 15,
@@ -129,27 +134,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const finalContactPerson = metaContactPerson || (user.email ? user.email.split('@')[0].replace(/\b\w/g, (c: string) => c.toUpperCase()) : 'Operations Contact');
 
           // 1. Fetch profile from database via dedicated server API
+          let resolvedProfile: Profile = DEFAULT_PROFILE;
           try {
             const profileRes = await fetch(`/api/profile/get?userId=${user.id}`);
             const profileJson = await profileRes.json();
             if (profileJson.success && profileJson.profile) {
               const dbProf = profileJson.profile;
-              const resolved: Profile = {
+              resolvedProfile = {
                 ...DEFAULT_PROFILE,
                 ...dbProf,
                 company_name: dbProf.company_name || finalCompanyName,
                 contact_person: dbProf.contact_person || finalContactPerson,
                 role: resolvedRole,
               };
-              setProfile(resolved);
-              localStorage.setItem('marketpulse_profile', JSON.stringify(resolved));
+              setProfile(resolvedProfile);
+              localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
             } else {
               const { data: profileData } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', user.id)
                 .single();
-              const resolvedProfile: Profile = {
+              resolvedProfile = {
                 ...DEFAULT_PROFILE,
                 ...(profileData || {}),
                 company_name: profileData?.company_name || finalCompanyName,
@@ -165,7 +171,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               .select('*')
               .eq('id', user.id)
               .single();
-            const resolvedProfile: Profile = {
+            resolvedProfile = {
               ...DEFAULT_PROFILE,
               ...(profileData || {}),
               company_name: profileData?.company_name || finalCompanyName,
@@ -181,8 +187,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const configRes = await fetch(`/api/config/get?userId=${user.id}`);
             const configJson = await configRes.json();
             if (configJson.success && configJson.config) {
-              setUserConfig(configJson.config);
-              localStorage.setItem('marketpulse_config', JSON.stringify(configJson.config));
+              const mergedConfig = {
+                ...DEFAULT_USER_CONFIG,
+                ...configJson.config,
+                email_signature: configJson.config.email_signature || resolvedProfile.email_signature || DEFAULT_USER_CONFIG.email_signature,
+              };
+              setUserConfig(mergedConfig);
+              localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
             } else {
               const { data: configData } = await supabase
                 .from('user_configs')
@@ -190,8 +201,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 .eq('id', user.id)
                 .single();
               if (configData) {
-                setUserConfig(configData);
-                localStorage.setItem('marketpulse_config', JSON.stringify(configData));
+                const mergedConfig = {
+                  ...DEFAULT_USER_CONFIG,
+                  ...configData,
+                  email_signature: configData.email_signature || resolvedProfile.email_signature || DEFAULT_USER_CONFIG.email_signature,
+                };
+                setUserConfig(mergedConfig);
+                localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
               }
             }
           } catch {
@@ -548,6 +564,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserConfig(newConfig);
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_config', JSON.stringify(newConfig));
+    }
+
+    if (newConfig.email_signature) {
+      setProfile(prev => ({ ...prev, email_signature: newConfig.email_signature! }));
+      if (typeof window !== 'undefined') {
+        const savedProf = localStorage.getItem('marketpulse_profile');
+        if (savedProf) {
+          try {
+            const parsed = JSON.parse(savedProf);
+            localStorage.setItem('marketpulse_profile', JSON.stringify({ ...parsed, email_signature: newConfig.email_signature }));
+          } catch {}
+        }
+      }
     }
 
     try {

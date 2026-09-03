@@ -1,6 +1,34 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Lead, Profile, ScrapedData, AiEnrichmentResult } from './types';
-import { getLiveGeminiModels, DEFAULT_GEMINI_MODELS } from './gemini-models';
+import { getLiveGeminiModels } from './gemini-models';
+
+export function enforceEmailSignature(bodyText: string, signature: string): string {
+  if (!bodyText) return '';
+  if (!signature || !signature.trim()) return bodyText.trim();
+
+  const trimmedSig = signature.trim();
+
+  // If the body already contains the exact signature, return it clean
+  if (bodyText.includes(trimmedSig)) {
+    return bodyText.trim();
+  }
+
+  // Remove common generic placeholder sign-offs that AI might generate at the end of the email:
+  let cleanedBody = bodyText.trim();
+  const signOffPatterns = [
+    /\n\s*(Thanks\s*(&|and)?\s*Regards|Best\s*regards|Warm\s*regards|Sincerely|Kind\s*regards|Cheers|With\s*regards)[\s\S]*$/i,
+    /\n\s*\[(?:Name|Team|Company Name|Phone|Email|Address|Portfolio)\][\s\S]*$/i,
+  ];
+
+  for (const pattern of signOffPatterns) {
+    if (pattern.test(cleanedBody)) {
+      cleanedBody = cleanedBody.replace(pattern, '').trim();
+      break;
+    }
+  }
+
+  return `${cleanedBody}\n\n${trimmedSig}`;
+}
 
 export async function enrichLeadWithGemini(
   lead: Partial<Lead>,
@@ -8,6 +36,10 @@ export async function enrichLeadWithGemini(
   userProfile: Partial<Profile>,
   apiKey?: string
 ): Promise<AiEnrichmentResult> {
+  const targetSignature = (userProfile.email_signature && userProfile.email_signature.trim().length > 0)
+    ? userProfile.email_signature.trim()
+    : 'Thanks & Regards\nGrowth & Strategy Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | www.digipresence.in';
+
   const rawKey = apiKey || process.env.GEMINI_API_KEY;
 
   if (!rawKey || rawKey.trim() === '') {
@@ -27,8 +59,12 @@ Your objective is to analyze a prospective client company and synthesize a highl
 - Target Markets & Industry Segments: ${Array.isArray(userProfile.target_markets) ? userProfile.target_markets.join(', ') : 'Global B2B, North America, Europe, Asia'}
 - Unique Value Proposition (USP): ${userProfile.unique_selling_proposition || 'Delivering measurable ROI through custom AI workflows, dedicated strategy, and robust execution.'}
 - Accreditations & Certifications: ${userProfile.strengths_and_certifications || 'Enterprise Verified, ISO Certified, Industry Leading Partner'}
-- Email Signature:
-${userProfile.email_signature || 'Thanks & Regards\nGrowth & Strategy Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | www.digipresence.in'}
+
+### SENDER'S MANDATORY EMAIL SIGNATURE:
+You MUST conclude the email strictly with this exact email signature verbatim:
+"""
+${targetSignature}
+"""
 
 ### PROSPECT DATA (The Lead):
 - Company Name: ${lead.company_name || 'Prospective Partner'}
@@ -49,7 +85,7 @@ Analyze the lead's operational focus and produce a structured JSON response matc
   "company_profile": "2-3 concise sentences summarizing what this prospect does, their market focus, and their primary operational footprint.",
   "financial_info": "Observable scale indicators (e.g. estimated office count, market presence, enterprise scale, or tier bracket).",
   "email_subject": "A compelling, 4-8 word, curiosity-inducing cold email subject line customized to the prospect's company and operational focus (avoid cheesy spam phrases).",
-  "email_body": "A tailored, high-converting B2B cold outreach email (approx 120-180 words). The email MUST:\n1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally.\n2. Reference a specific aspect of ${lead.company_name}'s operations or market focus based on the scraped context.\n3. Clearly bridge how ${userProfile.company_name || 'our company'}'s strengths (${Array.isArray(userProfile.services_offered) ? userProfile.services_offered.slice(0, 2).join(' & ') : 'our solutions'}) directly solve bottlenecks or unlock measurable growth.\n4. Call to Action (CTA): Conclude with a low-friction closing statement that compels the prospect to simply reply back to this email or call back on the contact number provided in the signature. NEVER ask to schedule a calendar meeting or suggest a specific day/time (like '10-minute call this Thursday'), as this causes friction in cold email outreach.\n5. Conclude cleanly with the sender's full signature formatted exactly as: Thanks & Regards\\n[Name / Team]\\n[Company Name]\\nEmail: [Email]\\nAddress: [Address] | Phone No.: [Phone] | [Website]\\n[Portfolio/Social Links]."
+  "email_body": "A tailored, high-converting B2B cold outreach email (approx 120-180 words). The email MUST:\n1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally.\n2. Reference a specific aspect of ${lead.company_name}'s operations or market focus based on the scraped context.\n3. Clearly bridge how ${userProfile.company_name || 'our company'}'s strengths (${Array.isArray(userProfile.services_offered) ? userProfile.services_offered.slice(0, 2).join(' & ') : 'our solutions'}) directly solve bottlenecks or unlock measurable growth.\n4. Call to Action (CTA): Conclude with a low-friction closing statement that compels the prospect to simply reply back to this email or call back on the contact number provided in the signature. NEVER ask to schedule a calendar meeting or suggest a specific day/time (like '10-minute call this Thursday'), as this causes friction in cold email outreach.\n5. MANDATORY SIGNATURE: Conclude cleanly with the sender's exact email signature provided above verbatim. Do NOT invent placeholders like '[Name / Team]' or change the contact info."
 }
 
 Return ONLY valid JSON matching this exact structure.
@@ -87,7 +123,7 @@ Return ONLY valid JSON matching this exact structure.
                   company_profile: parsed.company_profile || `${lead.company_name} business overview.`,
                   financial_info: parsed.financial_info || 'Established enterprise market presence.',
                   email_subject: parsed.email_subject,
-                  email_body: parsed.email_body,
+                  email_body: enforceEmailSignature(parsed.email_body, targetSignature),
                 };
               }
             }
@@ -116,7 +152,7 @@ Return ONLY valid JSON matching this exact structure.
             company_profile: parsed.company_profile || `${lead.company_name} enterprise profile.`,
             financial_info: parsed.financial_info || 'Enterprise commercial presence.',
             email_subject: parsed.email_subject,
-            email_body: parsed.email_body,
+            email_body: enforceEmailSignature(parsed.email_body, targetSignature),
           };
         }
       } catch {
@@ -143,17 +179,15 @@ function generateFallbackEnrichment(
   const services = Array.isArray(userProfile.services_offered) && userProfile.services_offered.length > 0 
     ? userProfile.services_offered.slice(0, 2).join(' and ')
     : 'Custom AI Automation and Digital Solutions';
-  const signature = userProfile.email_signature || `Thanks & Regards\nGrowth & Strategy Team\n${senderCompany}\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | www.digipresence.in`;
+  const signature = (userProfile.email_signature && userProfile.email_signature.trim().length > 0)
+    ? userProfile.email_signature.trim()
+    : `Thanks & Regards\nGrowth & Strategy Team\n${senderCompany}\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | www.digipresence.in`;
 
   const summaryContext = scrapedData?.description || scrapedData?.title 
     ? `${scrapedData.title ? scrapedData.title + '. ' : ''}${scrapedData.description || ''}`
     : `commercial and operations growth in ${country}`;
 
-  return {
-    company_profile: `${companyName} is an active commercial entity operating out of ${country}, specializing in ${summaryContext.slice(0, 140)}.`,
-    financial_info: `Enterprise Tier: Mid-to-Large scale operations with active digital footprint across ${country} and regional partner networks.`,
-    email_subject: `Strategic growth & operational efficiency for ${companyName}`,
-    email_body: `Hi ${contactName},
+  const basePitch = `Hi ${contactName},
 
 I have been following ${companyName}'s growth and operational presence in ${country}. Given your focus on expanding digital efficiency and market reach, I wanted to connect directly.
 
@@ -161,8 +195,12 @@ At ${senderCompany}, we specialize in ${services}${userProfile.strengths_and_cer
 
 ${userProfile.unique_selling_proposition ? `Specifically, ${userProfile.unique_selling_proposition.toLowerCase()}` : 'We provide end-to-end strategy, dedicated execution, and measurable ROI.'}
 
-If this resonates with your current roadmap, simply reply directly to this email or call us on the contact number below, and we'll be glad to share relevant case benchmarks.
+If this resonates with your current roadmap, simply reply directly to this email or call us on the contact number below, and we'll be glad to share relevant case benchmarks.`;
 
-${signature}`,
+  return {
+    company_profile: `${companyName} is an active commercial entity operating out of ${country}, specializing in ${summaryContext.slice(0, 140)}.`,
+    financial_info: `Enterprise Tier: Mid-to-Large scale operations with active digital footprint across ${country} and regional partner networks.`,
+    email_subject: `Strategic growth & operational efficiency for ${companyName}`,
+    email_body: enforceEmailSignature(basePitch, signature),
   };
 }

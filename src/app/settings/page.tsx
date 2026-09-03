@@ -22,7 +22,8 @@ import {
   FileText,
   Check,
   Eye,
-  Code2
+  Code2,
+  Copy
 } from 'lucide-react';
 import { useApp } from '@/lib/store/app-context';
 import { UserConfig } from '@/lib/types';
@@ -146,7 +147,14 @@ export default function SettingsPage() {
 
   // Synchronize form whenever userConfig loads or updates from database
   useEffect(() => {
-    setFormData({ ...userConfig });
+    setFormData({
+      ...userConfig,
+      email_signature: userConfig.email_signature || profile.email_signature || '',
+      cc_enabled: userConfig.cc_enabled || false,
+      cc_emails: userConfig.cc_emails || '',
+      bcc_enabled: userConfig.bcc_enabled || false,
+      bcc_emails: userConfig.bcc_emails || '',
+    });
     if (userConfig.from_email && !testRecipientEmail) {
       setTestRecipientEmail(userConfig.from_email);
     }
@@ -163,7 +171,7 @@ export default function SettingsPage() {
     } else if (userConfig.smtp_host) {
       setSelectedPresetId('custom');
     }
-  }, [userConfig]);
+  }, [userConfig, profile.email_signature]);
 
   const handleRewriteWithGemini = async () => {
     setIsRewritingTemplate(true);
@@ -557,6 +565,146 @@ export default function SettingsPage() {
                 placeholder="Himanshu | Anirise Logistics"
                 className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none"
               />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Sender From Email (Optional)</label>
+              <input
+                type="email"
+                value={formData.from_email || ''}
+                onChange={(e) => setFormData({ ...formData, from_email: e.target.value })}
+                placeholder="outreach@company.com"
+                className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Automated Outgoing Cc & Bcc Configuration */}
+          <div className="pt-5 border-t border-slate-100 dark:border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
+              <div className="flex items-center gap-2">
+                <Copy className="w-4 h-4 text-teal-600 dark:text-cyan-400" />
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  Automated Outgoing Cc &amp; Bcc Configuration
+                </h4>
+              </div>
+              <span className="text-[11px] text-slate-400">
+                Automatically attaches to each outgoing email dispatched via SMTP
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* Cc Configuration */}
+              <div className={`p-4 rounded-2xl border transition-all ${
+                formData.cc_enabled 
+                  ? 'bg-teal-50/40 dark:bg-cyan-950/20 border-teal-200 dark:border-cyan-500/30 shadow-xs' 
+                  : 'bg-slate-50 dark:bg-[#0B1120] border-slate-200 dark:border-slate-800'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.cc_enabled || false}
+                      onChange={(e) => setFormData({ ...formData, cc_enabled: e.target.checked })}
+                      className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 dark:border-slate-700 dark:bg-slate-900 cursor-pointer"
+                    />
+                    <span className="font-bold text-xs text-slate-900 dark:text-white">Enable Cc (Carbon Copy)</span>
+                  </label>
+                  {formData.cc_enabled && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 dark:bg-cyan-500/20 dark:text-cyan-300">
+                      Active
+                    </span>
+                  )}
+                </div>
+
+                {formData.cc_enabled && (
+                  <div className="space-y-1.5 pt-2 animate-in fade-in">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      Cc Recipients (Multiple Allowed)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.cc_emails || ''}
+                      onChange={(e) => setFormData({ ...formData, cc_emails: e.target.value })}
+                      placeholder="e.g. ops@company.com, audit@company.com"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      Enter one or multiple email addresses separated by commas, semicolons, or spaces.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Bcc Configuration */}
+              <div className={`p-4 rounded-2xl border transition-all ${
+                formData.bcc_enabled 
+                  ? 'bg-teal-50/40 dark:bg-cyan-950/20 border-teal-200 dark:border-cyan-500/30 shadow-xs' 
+                  : 'bg-slate-50 dark:bg-[#0B1120] border-slate-200 dark:border-slate-800'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.bcc_enabled || false}
+                      onChange={(e) => setFormData({ ...formData, bcc_enabled: e.target.checked })}
+                      className="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 dark:border-slate-700 dark:bg-slate-900 cursor-pointer"
+                    />
+                    <span className="font-bold text-xs text-slate-900 dark:text-white">Enable Bcc (Blind Carbon Copy)</span>
+                  </label>
+                  {formData.bcc_enabled && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 dark:bg-cyan-500/20 dark:text-cyan-300">
+                      Active
+                    </span>
+                  )}
+                </div>
+
+                {formData.bcc_enabled && (
+                  <div className="space-y-1.5 pt-2 animate-in fade-in">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      Bcc Recipients (Multiple Allowed)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.bcc_emails || ''}
+                      onChange={(e) => setFormData({ ...formData, bcc_emails: e.target.value })}
+                      placeholder="e.g. crm-inbox@hubspot.com, archive@company.com"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      Enter one or multiple email addresses separated by commas, semicolons, or spaces.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Standard Outgoing Email Signature Section */}
+          <div className="pt-5 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-teal-600 dark:text-cyan-400" />
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  Standard Outgoing Email Signature
+                </h4>
+              </div>
+              <span className="text-[11px] text-teal-600 dark:text-cyan-400 font-semibold">
+                Strictly applied to all AI-generated outreach drafts
+              </span>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <textarea
+                rows={6}
+                value={formData.email_signature ?? profile.email_signature ?? ''}
+                onChange={(e) => setFormData({ ...formData, email_signature: e.target.value })}
+                placeholder={`Thanks & Regards\nOperations & Growth Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | https://www.digipresence.in\nLinkedIn: https://linkedin.com/company/digipresence-solutions`}
+                className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono leading-relaxed text-xs shadow-inner"
+              />
+              <p className="text-[11px] text-slate-400">
+                Pattern: Thanks &amp; Regards &bull; [Name / Team] &bull; [Company Name] &bull; [Email] &bull; [Address | Phone | Website] &bull; [Portfolio / Social Links]
+              </p>
             </div>
           </div>
 

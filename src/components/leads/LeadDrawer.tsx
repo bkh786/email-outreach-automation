@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { Lead, LeadStatus } from '@/lib/types';
 import { useApp } from '@/lib/store/app-context';
-import { HtmlEmailPreview } from '@/components/common/HtmlEmailPreview';
+import { buildEmailDocument } from '@/lib/email-formatter';
 
 interface LeadDrawerProps {
   leadId: string | null;
@@ -503,11 +503,21 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setIsPreviewMode(!isPreviewMode)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700 shadow-xs"
                 >
-                  {isPreviewMode ? <Edit3 className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" /> : <Eye className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />}
-                  <span>{isPreviewMode ? 'Edit Draft' : 'Preview HTML'}</span>
+                  {isPreviewMode ? (
+                    <>
+                      <Edit3 className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
+                      <span>Edit Draft (Plain Text)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
+                      <span>Preview HTML</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -530,7 +540,7 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Email Body (Matched to {profile.company_name} Profile)
+                  {isPreviewMode ? 'Email Preview (Rendered HTML)' : `Email Body (Plain Text Format — Matched to ${profile.company_name} Profile)`}
                 </label>
                 <span className="text-[10px] text-slate-400 font-mono">
                   {body.split(/\s+/).filter(Boolean).length} words
@@ -538,19 +548,21 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
               </div>
 
               {isPreviewMode ? (
-                <HtmlEmailPreview
-                  content={body || '<p style="color: #94a3b8; font-style: italic;">No email draft generated yet.</p>'}
-                  title="Lead Email Preview"
-                  minHeight="260px"
-                  allowToggleView={true}
-                />
+                <div className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white overflow-hidden shadow-xs">
+                  <iframe
+                    title="Lead Email HTML Preview"
+                    srcDoc={buildEmailDocument(body || '<p style="color: #94a3b8; font-style: italic; padding: 20px;">No email draft generated yet.</p>')}
+                    sandbox="allow-popups allow-popups-to-escape-sandbox"
+                    className="w-full min-h-[360px] border-0 bg-white"
+                  />
+                </div>
               ) : (
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  rows={10}
+                  rows={12}
                   placeholder="Personalized cold outreach email proposal..."
-                  className="w-full text-xs bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none transition-colors font-mono leading-relaxed resize-y"
+                  className="w-full text-xs bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none transition-colors font-mono leading-relaxed resize-y shadow-inner"
                 />
               )}
             </div>

@@ -38,7 +38,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    const config = configs && configs.length > 0 ? configs[0] : null;
+    let config = configs && configs.length > 0 ? configs[0] : null;
+
+    // If config does not have email_signature or columns not yet migrated, pull signature from profiles
+    if (userId && (!config || !config.email_signature)) {
+      try {
+        const { data: profile } = await adminSupabase
+          .from('profiles')
+          .select('email_signature')
+          .eq('id', userId)
+          .single();
+        if (profile?.email_signature) {
+          config = {
+            ...(config || { id: userId }),
+            email_signature: profile.email_signature,
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     return NextResponse.json({
       success: true,
