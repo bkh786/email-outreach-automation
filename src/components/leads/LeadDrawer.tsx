@@ -37,9 +37,9 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
   
   const lead = leads.find(l => l.id === leadId);
 
-  // Email draft state
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
+  // Email draft state - directly initialize from lead to prevent blank mount in iframe
+  const [subject, setSubject] = useState(lead?.email_subject || '');
+  const [body, setBody] = useState(lead?.email_body || '');
   const [isPreviewMode, setIsPreviewMode] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -52,12 +52,12 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
 
   // Lead metadata edit mode state
   const [isEditingLead, setIsEditingLead] = useState(false);
-  const [editCompanyName, setEditCompanyName] = useState('');
-  const [editContactPerson, setEditContactPerson] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editCountry, setEditCountry] = useState('');
-  const [editWebsiteUrl, setEditWebsiteUrl] = useState('');
+  const [editCompanyName, setEditCompanyName] = useState(lead?.company_name || '');
+  const [editContactPerson, setEditContactPerson] = useState(lead?.contact_person || '');
+  const [editEmail, setEditEmail] = useState(lead?.email || '');
+  const [editPhone, setEditPhone] = useState(lead?.phone || '');
+  const [editCountry, setEditCountry] = useState(lead?.country || '');
+  const [editWebsiteUrl, setEditWebsiteUrl] = useState(lead?.website_url || '');
   const [isSavingLeadMeta, setIsSavingLeadMeta] = useState(false);
   const [leadMetaSuccess, setLeadMetaSuccess] = useState(false);
 
@@ -75,9 +75,26 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
       setSendSuccessMessage(null);
       setSendErrorMessage(null);
     }
-  }, [lead]);
+  }, [lead?.id, lead?.email_subject, lead?.email_body]);
 
   if (!lead) return null;
+
+  const handleClearDraft = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to discard this pre-written draft? The subject and email body will be cleared so you can generate a fresh draft.'
+    );
+    if (!confirmed) return;
+
+    setSubject('');
+    setBody('');
+    await updateLead(lead.id, {
+      email_subject: '',
+      email_body: '',
+      status: lead.status === 'sent' ? 'sent' : 'pending',
+    });
+    setRewriteFeedback('Pre-written draft discarded. Click "Generate Fresh Draft with Gemini" or "Rewrite with Gemini" to create a new draft.');
+    setTimeout(() => setRewriteFeedback(null), 4500);
+  };
 
   // Save Lead Metadata (Company Name, Contact Person, Email, Phone, Country, Website)
   const handleSaveLeadMeta = async (e?: React.FormEvent) => {
@@ -619,6 +636,20 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
                     </>
                   )}
                 </button>
+
+                {/* Clear / Discard Draft Button */}
+                {(subject || body || lead.email_subject || lead.email_body) && (
+                  <button
+                    type="button"
+                    onClick={handleClearDraft}
+                    disabled={isRewriting || isEnriching || isSaving}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-xs font-bold text-rose-600 dark:text-rose-400 transition-colors border border-rose-200 dark:border-rose-900/50 shadow-xs active:scale-95"
+                    title="Discard pre-written draft and start fresh"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Clear Draft</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -696,18 +727,50 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
 
               {isPreviewMode ? (
                 <div className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white overflow-hidden shadow-xs">
-                  <iframe
-                    title="Lead Email HTML Preview"
-                    srcDoc={buildEmailDocument(body || '<p style="color: #94a3b8; font-style: italic; padding: 20px;">No email draft generated yet.</p>')}
-                    sandbox="allow-popups allow-popups-to-escape-sandbox"
-                    className="w-full min-h-[360px] border-0 bg-white"
-                  />
+                  {body && body.trim().length > 0 ? (
+                    <iframe
+                      key={`preview-${lead.id}-${body.length}`}
+                      title="Lead Email HTML Preview"
+                      srcDoc={buildEmailDocument(body)}
+                      sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                      className="w-full min-h-[380px] border-0 bg-white"
+                      onLoad={(e) => {
+                        try {
+                          const iframe = e.currentTarget;
+                          if (iframe.contentDocument && (!iframe.contentDocument.body || iframe.contentDocument.body.innerHTML.trim() === '')) {
+                            iframe.contentDocument.open();
+                            iframe.contentDocument.write(buildEmailDocument(body));
+                            iframe.contentDocument.close();
+                          }
+                        } catch {}
+                      }}
+                    />
+                  ) : (
+                    <div className="p-8 text-center flex flex-col items-center justify-center min-h-[320px] bg-slate-50/50 dark:bg-[#0B1120]/50">
+                      <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-cyan-500/10 border border-teal-200 dark:border-cyan-500/20 flex items-center justify-center mb-3">
+                        <Sparkles className="w-6 h-6 text-teal-600 dark:text-cyan-400" />
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">No Outreach Draft Generated Yet</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1 mb-4">
+                        The previous draft was discarded or has not been synthesized yet. Click below to generate a fresh, personalized cold outreach email with Gemini AI.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleRewriteWithGemini()}
+                        disabled={isRewriting || isEnriching}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 active:scale-95 transition-all"
+                      >
+                        <Sparkles className={`w-3.5 h-3.5 ${isRewriting ? 'animate-spin' : ''}`} />
+                        <span>{isRewriting ? 'Generating Fresh Draft...' : 'Generate Fresh Draft with Gemini'}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  rows={12}
+                  rows={14}
                   placeholder="Personalized cold outreach email proposal..."
                   className="w-full text-xs bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none transition-colors font-mono leading-relaxed resize-y shadow-inner"
                 />
@@ -744,7 +807,7 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
               }`}
             >
               <Send className={`w-3.5 h-3.5 ${isSending ? 'animate-spin' : ''}`} />
-              <span>{isSending ? 'Sending...' : lead.status === 'sent' ? 'Re-send Outreach' : 'Approve & Send Now'}</span>
+              <span>{isSending ? 'Sending...' : lead.status === 'sent' ? 'Approve & Re-send Now' : 'Approve & Send Now'}</span>
             </button>
           </div>
         </div>

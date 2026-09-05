@@ -525,7 +525,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         financial_info: enrichment.financial_info,
         email_subject: enrichment.email_subject,
         email_body: enrichment.email_body,
-        status: userConfig.auto_send_enabled ? 'approved' : 'drafted',
+        status: 'drafted',
       };
       await updateLead(id, updates);
 
@@ -539,10 +539,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         created_at: new Date().toISOString(),
       };
       await persistLogs([newLog, ...logs]);
-
-      if (userConfig.auto_send_enabled) {
-        await sendSingleEmail(id);
-      }
 
       return true;
     } catch (err: any) {

@@ -232,10 +232,10 @@ export default function LeadTable({ onSelectLead, onOpenUploader, onOpenManualAd
               onClick={handleRunAutonomousDispatch}
               disabled={isDispatchingNow}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/20 disabled:opacity-60"
-              title="Process and dispatch pending leads via autonomous queue immediately"
+              title="Synthesize AI research and generate drafts for pending leads"
             >
               <Zap className={`w-3.5 h-3.5 ${isDispatchingNow ? 'animate-spin' : ''}`} />
-              <span>{isDispatchingNow ? 'Dispatching...' : `Dispatch Queue (${pendingCount})`}</span>
+              <span>{isDispatchingNow ? 'Researching...' : `Research Leads (${pendingCount})`}</span>
             </button>
           )}
 

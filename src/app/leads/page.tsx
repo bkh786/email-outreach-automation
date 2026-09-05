@@ -65,10 +65,13 @@ function LeadsContent() {
       />
 
       {/* Sliding Lead Detail & Email Editor Drawer */}
-      <LeadDrawer
-        leadId={activeLeadId}
-        onClose={() => setActiveLeadId(null)}
-      />
+      {activeLeadId && (
+        <LeadDrawer
+          key={activeLeadId}
+          leadId={activeLeadId}
+          onClose={() => setActiveLeadId(null)}
+        />
+      )}
     </div>
   );
 }

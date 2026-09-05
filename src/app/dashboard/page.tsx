@@ -81,10 +81,13 @@ export default function DashboardPage() {
       <RecentActivityFeed onOpenLead={(id) => setActiveLeadId(id)} />
 
       {/* Lead Drawer */}
-      <LeadDrawer
-        leadId={activeLeadId}
-        onClose={() => setActiveLeadId(null)}
-      />
+      {activeLeadId && (
+        <LeadDrawer
+          key={activeLeadId}
+          leadId={activeLeadId}
+          onClose={() => setActiveLeadId(null)}
+        />
+      )}
     </div>
   );
 }
