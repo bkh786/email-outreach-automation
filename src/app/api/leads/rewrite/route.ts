@@ -107,7 +107,8 @@ ${customDirective}
 - Target Markets: ${Array.isArray(effectiveProfile?.target_markets) ? effectiveProfile.target_markets.join(', ') : 'Global B2B Markets'}
 - Unique Value Proposition (USP): ${effectiveProfile?.unique_selling_proposition || 'Delivering measurable growth and operational efficiency.'}
 - Certifications / Strengths: ${effectiveProfile?.strengths_and_certifications || 'Enterprise verified'}
-${portfolioUrl ? `- Company Credentials / Portfolio Deck (URL): ${portfolioUrl}` : ''}
+${portfolioUrl ? `- Company Credentials / Portfolio Deck (URL): ${portfolioUrl}
+MANDATE: The sender has provided their verified Company Credentials / Portfolio link (${portfolioUrl}). Mention this link naturally in the email body by default so the prospect can review credentials.` : ''}
 
 ${signatureInstructions}
 
@@ -127,7 +128,7 @@ ${cleanPreviousBody ? cleanPreviousBody.slice(0, 1500) : 'None'}
 Respond ONLY with a valid JSON object matching this schema:
 {
   "email_subject": "A fresh, compelling, 4-7 word subject line tailored to the prospect (no spam triggers).",
-  "email_body": "A tailored, high-converting B2B cold outreach email formatted in clean, professional HTML with inline styles. Use <p style='margin: 0 0 16px 0; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b;'> for paragraphs. Use <strong> for emphasis. Include a styled callout box (<div style='margin: 16px 0; padding: 14px 18px; background-color: #f8fafc; border-left: 3px solid #0d9488; border-radius: 0 8px 8px 0; font-size: 14px; line-height: 1.6; color: #334155;'>...</div>) for core value proposition. End with a low-friction CTA (reply to email or call). ${hasPanelSignature ? 'CRITICAL: STOP immediately after the CTA. DO NOT include any closing sign-off, sender name, company name, or contact block.' : 'Conclude with a single professional closing sign-off and signature synthesized from the website and brand profile.'}"
+  "email_body": "A tailored, high-converting B2B cold outreach email formatted in clean, professional HTML with inline styles. Use <p style='margin: 0 0 16px 0; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b;'> for paragraphs. Use <strong> for emphasis. Include a styled callout box (<div style='margin: 16px 0; padding: 14px 18px; background-color: #f8fafc; border-left: 3px solid #0d9488; border-radius: 0 8px 8px 0; font-size: 14px; line-height: 1.6; color: #334155;'>...</div>) for core value proposition. End with a low-friction CTA (reply to email or call). ${portfolioUrl ? `Include a natural mention inviting the prospect to review our company credentials deck (${portfolioUrl}). ` : ''}${hasPanelSignature ? 'CRITICAL: STOP immediately after the CTA. DO NOT include any closing sign-off, sender name, company name, or contact block.' : 'Conclude with a single professional closing sign-off and signature synthesized from the website and brand profile.'}"
 }
 `;
 

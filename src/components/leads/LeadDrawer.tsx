@@ -161,7 +161,8 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
 
       const effectiveProfile = {
         ...profile,
-        email_signature: userConfig.email_signature || profile.email_signature || '',
+        email_signature: profile.email_signature || userConfig.email_signature || '',
+        portfolio_url: profile.portfolio_url || userConfig.portfolio_url || (userConfig as any)?.['portfolio-link'] || '',
       };
 
       const res = await fetch('/api/leads/rewrite', {

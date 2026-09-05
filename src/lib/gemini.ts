@@ -2,21 +2,25 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Lead, Profile, ScrapedData, AiEnrichmentResult } from './types';
 import { getLiveGeminiModels } from './gemini-models';
 
-// Email-safe SVG Icons
-const ICONS = {
-  phone: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; flex-shrink: 0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
-  whatsapp: `<svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366" style="vertical-align: middle; flex-shrink: 0;"><path d="M17.472 14.382c-.301-.15-1.78-.878-2.056-.979-.276-.1-.476-.15-.677.15-.2.301-.777.98-1.002 1.23-.226.25-.451.276-.752.125-.3-.151-1.267-.467-2.414-1.489-.893-.797-1.496-1.782-1.671-2.083-.176-.3-.019-.463.131-.613.136-.134.3-.351.451-.527.15-.175.2-.3.301-.501.1-.2.05-.376-.025-.526-.075-.151-.676-1.63-.927-2.232-.244-.587-.493-.507-.677-.517-.175-.01-.376-.01-.576-.01s-.527.075-.802.376c-.276.301-1.053 1.028-1.053 2.508s1.078 2.909 1.229 3.11c.15.2 2.121 3.238 5.138 4.542.718.31 1.279.496 1.716.635.722.23 1.378.197 1.898.119.579-.087 1.78-.727 2.03-1.429.251-.702.251-1.304.176-1.429-.076-.126-.276-.201-.577-.351zM12.042 2C6.502 2 2 6.502 2 12.042c0 1.946.554 3.76 1.517 5.304L2 22l4.807-1.482A9.99 9.99 0 0 0 12.042 22C17.582 22 22 17.498 22 12.042 22 6.502 17.582 2 12.042 2z"/></svg>`,
-  email: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; flex-shrink: 0;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
-  website: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
-  linkedin: `<svg width="13" height="13" viewBox="0 0 24 24" fill="#0A66C2" style="vertical-align: middle; flex-shrink: 0;"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v7.6h2.8v-7.6h-2.8M7.86 6.3a1.63 1.63 0 1 0 1.63 1.63A1.63 1.63 0 0 0 7.86 6.3z"/></svg>`,
-  twitter: `<svg width="13" height="13" viewBox="0 0 24 24" fill="#0f172a" style="vertical-align: middle; flex-shrink: 0;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
-  facebook: `<svg width="13" height="13" viewBox="0 0 24 24" fill="#1877F2" style="vertical-align: middle; flex-shrink: 0;"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`,
-  instagram: `<svg width="13" height="13" viewBox="0 0 24 24" fill="#E4405F" style="vertical-align: middle; flex-shrink: 0;"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>`,
-  address: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; flex-shrink: 0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+// Universal email-safe PNG Icons hosted on high-availability CDN (compatible with Google Image Proxy & desktop email clients)
+const PNG_ICONS = {
+  phone: 'https://img.icons8.com/color/48/phone.png',
+  whatsapp: 'https://img.icons8.com/color/48/whatsapp--v1.png',
+  email: 'https://img.icons8.com/color/48/email.png',
+  website: 'https://img.icons8.com/color/48/globe--v1.png',
+  linkedin: 'https://img.icons8.com/color/48/linkedin.png',
+  twitter: 'https://img.icons8.com/color/48/twitterx--v1.png',
+  facebook: 'https://img.icons8.com/color/48/facebook-new.png',
+  instagram: 'https://img.icons8.com/color/48/instagram-new.png',
+  address: 'https://img.icons8.com/color/48/marker.png',
 };
 
+function renderIconImg(url: string, alt: string = '') {
+  return `<img src="${url}" width="15" height="15" alt="${alt}" style="display: inline-block; vertical-align: -2px; margin-right: 5px; border: 0; outline: none; text-decoration: none;" />`;
+}
+
 /**
- * Converts raw signature text into an executive HTML signature with relevant icons
+ * Converts raw signature text into an executive HTML signature with relevant email-safe icons
  * for phone, whatsapp, website, email, social links, and physical address.
  * If signature is blank, synthesizes one from the user's website and brand profile.
  */
@@ -34,20 +38,29 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
   <div style="font-weight: 700; color: #0f172a; font-size: 14.5px; line-height: 1.3;">${nameOrTitle}</div>
   <div style="color: #0d9488; font-weight: 600; font-size: 13px; margin: 2px 0 8px 0;">${company}</div>
   ${websiteUrl ? `
-  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 4px;">
-    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-      ${ICONS.website}
+  <div style="margin-top: 6px; line-height: 1.8;">
+    <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+      ${renderIconImg(PNG_ICONS.website, 'Web')}
       <a href="${websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`}" target="_blank" style="color: #0d9488; text-decoration: underline; font-weight: 500;">${cleanWeb}</a>
     </span>
   </div>` : ''}
 </div>`.trim();
   }
 
-  const trimmed = signature.trim();
+  let trimmed = signature.trim();
 
-  // If already contains rendered icons and HTML container, return as is
-  if (trimmed.includes('border-top: 1px solid') && trimmed.includes('<svg')) {
+  // If already formatted with new PNG icons, return as is
+  if (trimmed.includes('border-top: 1px solid') && trimmed.includes('img.icons8.com')) {
     return trimmed;
+  }
+
+  // If contains old SVG signature container, strip container wrapper to extract underlying content
+  if (trimmed.includes('<svg')) {
+    trimmed = trimmed
+      .replace(/<svg[\s\S]*?<\/svg>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   // Parse lines
@@ -90,8 +103,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       const cleanNum = token.replace(/whatsapp:?|wa:?/i, '').trim();
       const phoneDigits = cleanNum.replace(/[^\d+]/g, '');
       contactPills.push(`
-        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-          ${ICONS.whatsapp}
+        <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+          ${renderIconImg(PNG_ICONS.whatsapp, 'WA')}
           <a href="https://wa.me/${phoneDigits.replace('+', '')}" target="_blank" style="color: #16a34a; text-decoration: none; font-weight: 500;">${cleanNum}</a>
         </span>
       `.trim());
@@ -103,8 +116,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       const urlMatch = token.match(/https?:\/\/[^\s]+/i);
       const url = urlMatch ? urlMatch[0] : `https://${token.replace(/linkedin:?/i, '').trim()}`;
       contactPills.push(`
-        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-          ${ICONS.linkedin}
+        <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+          ${renderIconImg(PNG_ICONS.linkedin, 'LinkedIn')}
           <a href="${url}" target="_blank" style="color: #0A66C2; text-decoration: none; font-weight: 500;">LinkedIn</a>
         </span>
       `.trim());
@@ -116,8 +129,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       const urlMatch = token.match(/https?:\/\/[^\s]+/i);
       const url = urlMatch ? urlMatch[0] : `https://${token.replace(/twitter:?|x:?/i, '').trim()}`;
       contactPills.push(`
-        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-          ${ICONS.twitter}
+        <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+          ${renderIconImg(PNG_ICONS.twitter, 'X')}
           <a href="${url}" target="_blank" style="color: #0f172a; text-decoration: none; font-weight: 500;">Twitter/X</a>
         </span>
       `.trim());
@@ -129,8 +142,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       const urlMatch = token.match(/https?:\/\/[^\s]+/i);
       const url = urlMatch ? urlMatch[0] : `https://${token.replace(/facebook:?|fb:?/i, '').trim()}`;
       contactPills.push(`
-        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-          ${ICONS.facebook}
+        <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+          ${renderIconImg(PNG_ICONS.facebook, 'Facebook')}
           <a href="${url}" target="_blank" style="color: #1877F2; text-decoration: none; font-weight: 500;">Facebook</a>
         </span>
       `.trim());
@@ -142,8 +155,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       const urlMatch = token.match(/https?:\/\/[^\s]+/i);
       const url = urlMatch ? urlMatch[0] : `https://${token.replace(/instagram:?|ig:?/i, '').trim()}`;
       contactPills.push(`
-        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-          ${ICONS.instagram}
+        <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+          ${renderIconImg(PNG_ICONS.instagram, 'Instagram')}
           <a href="${url}" target="_blank" style="color: #E4405F; text-decoration: none; font-weight: 500;">Instagram</a>
         </span>
       `.trim());
@@ -155,8 +168,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       const emailMatch = token.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
       const cleanEmail = emailMatch ? emailMatch[1] : token.replace(/e-?mail:?/i, '').trim();
       contactPills.push(`
-        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-          ${ICONS.email}
+        <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+          ${renderIconImg(PNG_ICONS.email, 'Email')}
           <a href="mailto:${cleanEmail}" style="color: #0d9488; text-decoration: none; font-weight: 500;">${cleanEmail}</a>
         </span>
       `.trim());
@@ -168,8 +181,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       const cleanPhone = token.replace(/phone\s*no\.?:?|phone:?|call:?|tel:?|mobile:?/i, '').trim();
       const phoneDigits = cleanPhone.replace(/[^\d+]/g, '');
       contactPills.push(`
-        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-          ${ICONS.phone}
+        <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+          ${renderIconImg(PNG_ICONS.phone, 'Phone')}
           <a href="tel:${phoneDigits}" style="color: #475569; text-decoration: none; font-weight: 500;">${cleanPhone}</a>
         </span>
       `.trim());
@@ -182,8 +195,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       const webUrl = cleanWeb.startsWith('http') ? cleanWeb : `https://${cleanWeb}`;
       const webDisplay = cleanWeb.replace(/^https?:\/\//i, '').replace(/\/$/, '');
       contactPills.push(`
-        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #475569;">
-          ${ICONS.website}
+        <span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">
+          ${renderIconImg(PNG_ICONS.website, 'Website')}
           <a href="${webUrl}" target="_blank" style="color: #0d9488; text-decoration: underline; font-weight: 500;">${webDisplay}</a>
         </span>
       `.trim());
@@ -212,8 +225,8 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
     ) {
       const cleanAddress = token.replace(/^(?:corporate|registered|head|branch)?\s*(?:office|address|location)?:?\s*/i, '').trim();
       addressLines.push(`
-        <div style="display: flex; align-items: flex-start; gap: 6px; margin-top: 5px; font-size: 12px; color: #64748b; line-height: 1.45;">
-          <span style="margin-top: 1px;">${ICONS.address}</span>
+        <div style="margin-top: 6px; font-size: 12px; color: #64748b; line-height: 1.45;">
+          ${renderIconImg(PNG_ICONS.address, 'Office')}
           <span>${cleanAddress || token}</span>
         </div>
       `.trim());
@@ -221,7 +234,7 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
     }
 
     // Fallback item
-    contactPills.push(`<span style="font-size: 12.5px; color: #475569;">${token}</span>`);
+    contactPills.push(`<span style="display: inline-block; margin-right: 14px; margin-bottom: 6px; font-size: 12.5px; color: #475569; white-space: nowrap; vertical-align: middle;">${token}</span>`);
   }
 
   return `
@@ -230,11 +243,11 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
   <div style="font-weight: 700; color: #0f172a; font-size: 14.5px; line-height: 1.3;">${detectedSender}</div>
   <div style="color: #0d9488; font-weight: 600; font-size: 13px; margin: 2px 0 8px 0;">${detectedCompany}</div>
   ${contactPills.length > 0 ? `
-  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 4px;">
+  <div style="margin-top: 6px; line-height: 1.8;">
     ${contactPills.join('\n    ')}
   </div>` : ''}
   ${addressLines.length > 0 ? `
-  <div style="margin-top: 4px;">
+  <div style="margin-top: 6px;">
     ${addressLines.join('\n')}
   </div>` : ''}
 </div>`.trim();
@@ -428,15 +441,28 @@ export function enforceEmailSignature(
     finalHtmlBody = finalHtmlBody.replace(/<\/div>\s*$/i, '').trim();
   }
 
-  // 9. Attach exactly ONE iconified HTML signature card
+  // 9. Attach Company Credentials / Portfolio Link by default if provided and not already included
+  const portfolioUrl = (profile?.portfolio_url || (profile as any)?.['portfolio-link'] || '').trim();
+  let portfolioCta = '';
+  if (portfolioUrl && !finalHtmlBody.includes(portfolioUrl) && !finalHtmlBody.toLowerCase().includes('company credentials')) {
+    const cleanHref = portfolioUrl.startsWith('http') ? portfolioUrl : `https://${portfolioUrl}`;
+    portfolioCta = `
+  <div style="margin: 18px 0 14px 0;">
+    <a href="${cleanHref}" target="_blank" style="display: inline-block; padding: 7px 15px; background-color: #f0fdfa; color: #0d9488; border: 1px solid #ccfbf1; border-radius: 8px; font-weight: 600; font-size: 12.5px; text-decoration: none;">
+      📄 View Company Credentials &amp; Portfolio Deck &rarr;
+    </a>
+  </div>`;
+  }
+
+  // 10. Attach exactly ONE iconified HTML signature card
   const sigToFormat = activeSignature || extractedAiSignature || '';
   const htmlSig = formatSignatureAsHtml(sigToFormat, profile);
 
   if (hadClosingDiv && /<div[^>]*>/i.test(finalHtmlBody)) {
-    return `${finalHtmlBody}\n\n  ${htmlSig}\n</div>`;
+    return `${finalHtmlBody}${portfolioCta ? `\n\n  ${portfolioCta}` : ''}\n\n  ${htmlSig}\n</div>`;
   }
 
-  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b; max-width: 620px;">\n${finalHtmlBody}\n\n  ${htmlSig}\n</div>`;
+  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b; max-width: 620px;">\n${finalHtmlBody}${portfolioCta ? `\n\n  ${portfolioCta}` : ''}\n\n  ${htmlSig}\n</div>`;
 }
 
 export async function enrichLeadWithGemini(
@@ -485,7 +511,8 @@ Your objective is to analyze a prospective client company and synthesize a highl
 - Target Markets & Industry Segments: ${Array.isArray(userProfile.target_markets) ? userProfile.target_markets.join(', ') : 'Global B2B, North America, Europe, Asia'}
 - Unique Value Proposition (USP): ${userProfile.unique_selling_proposition || 'Delivering measurable ROI through custom AI workflows, dedicated strategy, and robust execution.'}
 - Accreditations & Certifications: ${userProfile.strengths_and_certifications || 'Enterprise Verified, ISO Certified, Industry Leading Partner'}
-${portfolioUrl ? `- Company Credentials / Portfolio Deck (URL): ${portfolioUrl}` : ''}
+${portfolioUrl ? `- Company Credentials / Portfolio Deck (URL): ${portfolioUrl}
+MANDATE: Mention or invite the prospect to review this official Company Credentials / Portfolio Deck (${portfolioUrl}) by default.` : ''}
 
 ${signatureInstructions}
 
@@ -508,7 +535,7 @@ Analyze the lead's operational focus and produce a structured JSON response matc
   "company_profile": "2-3 concise sentences summarizing what this prospect does, their market focus, and their primary operational footprint.",
   "financial_info": "Observable scale indicators (e.g. estimated office count, market presence, enterprise scale, or tier bracket).",
   "email_subject": "A compelling, 4-8 word, curiosity-inducing cold email subject line customized to the prospect's company and operational focus (avoid cheesy spam phrases).",
-  "email_body": "A tailored, high-converting B2B cold outreach email formatted in clean, professional HTML with inline styles. Requirements: 1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally. 2. Reference specific aspects of ${lead.company_name}'s operations. 3. Clearly bridge sender capabilities to prospect needs using clean <p> tags and a styled callout box (<div style='margin: 16px 0; padding: 14px 18px; background-color: #f8fafc; border-left: 3px solid #0d9488; border-radius: 0 8px 8px 0;'>...</div>) with <strong> tags for key benefits. 4. Low-friction Call to Action. ${hasPanelSignature ? '5. STOP immediately after the CTA. DO NOT include any closing sign-off or signature block (it will be attached from the signature panel).' : '5. Conclude with a professional closing sign-off and signature generated from the sender website and brand profile.'}"
+  "email_body": "A tailored, high-converting B2B cold outreach email formatted in clean, professional HTML with inline styles. Requirements: 1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally. 2. Reference specific aspects of ${lead.company_name}'s operations. 3. Clearly bridge sender capabilities to prospect needs using clean <p> tags and a styled callout box (<div style='margin: 16px 0; padding: 14px 18px; background-color: #f8fafc; border-left: 3px solid #0d9488; border-radius: 0 8px 8px 0;'>...</div>) with <strong> tags for key benefits. 4. Low-friction Call to Action. ${portfolioUrl ? `5. Reference or invite the prospect to review our company credentials deck (${portfolioUrl}). ` : ''}${hasPanelSignature ? '6. STOP immediately after the CTA. DO NOT include any closing sign-off or signature block (it will be attached from the signature panel).' : '6. Conclude with a professional closing sign-off and signature generated from the sender website and brand profile.'}"
 }
 
 Return ONLY valid JSON matching this exact structure.

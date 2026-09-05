@@ -115,7 +115,13 @@ export function buildEmailDocument(
   </style>
 </head>
 <body>
-  ${formattedBody}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 620px; margin: 0 auto; background-color: #ffffff;">
+    <tr>
+      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b; padding: 0;">
+        ${formattedBody}
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
