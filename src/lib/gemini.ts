@@ -210,11 +210,11 @@ export function formatSignatureAsHtml(signature: string, profile?: Partial<Profi
       lower.includes('pincode') ||
       lower.includes('location')
     ) {
-      const cleanAddress = token.replace(/address:?|registered\s*office:?|office:?|location:?|loc:?/i, '').trim();
+      const cleanAddress = token.replace(/^(?:corporate|registered|head|branch)?\s*(?:office|address|location)?:?\s*/i, '').trim();
       addressLines.push(`
         <div style="display: flex; align-items: flex-start; gap: 6px; margin-top: 5px; font-size: 12px; color: #64748b; line-height: 1.45;">
           <span style="margin-top: 1px;">${ICONS.address}</span>
-          <span>${cleanAddress}</span>
+          <span>${cleanAddress || token}</span>
         </div>
       `.trim());
       continue;
