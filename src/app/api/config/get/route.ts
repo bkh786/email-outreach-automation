@@ -40,18 +40,38 @@ export async function GET(req: NextRequest) {
 
     let config = configs && configs.length > 0 ? configs[0] : null;
 
-    // If config does not have email_signature or columns not yet migrated, pull signature from profiles
-    if (userId && (!config || !config.email_signature)) {
+    if (config) {
+      const cc = config['Cc-Email'] ?? config.cc_emails ?? '';
+      const bcc = config['Bcc-Email'] ?? config.bcc_emails ?? '';
+      const portfolio = config['portfolio-link'] ?? config.portfolio_url ?? '';
+
+      config = {
+        ...config,
+        'Cc-Email': cc,
+        'Bcc-Email': bcc,
+        'portfolio-link': portfolio,
+        cc_emails: cc,
+        bcc_emails: bcc,
+        portfolio_url: portfolio,
+        cc_enabled: config.cc_enabled !== undefined ? config.cc_enabled : Boolean(cc && String(cc).trim().length > 0),
+        bcc_enabled: config.bcc_enabled !== undefined ? config.bcc_enabled : Boolean(bcc && String(bcc).trim().length > 0),
+      };
+    }
+
+    // Pull signature and portfolio from profiles if missing in user_configs
+    if (userId) {
       try {
         const { data: profile } = await adminSupabase
           .from('profiles')
-          .select('email_signature')
+          .select('email_signature, portfolio_url')
           .eq('id', userId)
           .single();
-        if (profile?.email_signature) {
+        if (profile) {
           config = {
             ...(config || { id: userId }),
-            email_signature: profile.email_signature,
+            email_signature: config?.email_signature || profile.email_signature || '',
+            portfolio_url: config?.portfolio_url || profile.portfolio_url || '',
+            'portfolio-link': config?.['portfolio-link'] || profile.portfolio_url || '',
           };
         }
       } catch {

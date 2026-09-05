@@ -54,6 +54,29 @@ export async function GET(req: NextRequest) {
 
     let profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
+    // Retrieve portfolio-link and email_signature from user_configs if available
+    if (userId) {
+      try {
+        const { data: userConfigData } = await adminSupabase
+          .from('user_configs')
+          .select('"portfolio-link", email_signature')
+          .eq('id', userId)
+          .single();
+        if (userConfigData) {
+          const cfgPort = userConfigData['portfolio-link'];
+          const cfgSig = userConfigData.email_signature;
+          profile = {
+            ...(profile || { id: userId }),
+            portfolio_url: cfgPort || profile?.portfolio_url || '',
+            'portfolio-link': cfgPort || profile?.portfolio_url || '',
+            email_signature: profile?.email_signature || cfgSig || '',
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     if (profile && userMeta) {
       profile = {
         ...profile,

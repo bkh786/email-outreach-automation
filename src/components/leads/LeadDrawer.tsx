@@ -33,17 +33,20 @@ interface LeadDrawerProps {
 }
 
 export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
-  const { leads, updateLead, enrichSingleLead, sendSingleEmail, deleteLead, profile } = useApp();
+  const { leads, updateLead, enrichSingleLead, sendSingleEmail, deleteLead, profile, userConfig } = useApp();
   
   const lead = leads.find(l => l.id === leadId);
 
   // Email draft state
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
+  const [isRewriting, setIsRewriting] = useState(false);
+  const [showToneMenu, setShowToneMenu] = useState(false);
+  const [rewriteFeedback, setRewriteFeedback] = useState<string | null>(null);
   const [sendSuccessMessage, setSendSuccessMessage] = useState<string | null>(null);
   const [sendErrorMessage, setSendErrorMessage] = useState<string | null>(null);
 
@@ -125,6 +128,55 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
     setSendErrorMessage(null);
     await enrichSingleLead(lead.id);
     setIsEnriching(false);
+  };
+
+  const handleRewriteWithGemini = async (customInstruction?: string) => {
+    setIsRewriting(true);
+    setRewriteFeedback(null);
+    setSendErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/leads/rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead: {
+            ...lead,
+            email_subject: subject,
+            email_body: body,
+          },
+          userProfile: profile,
+          apiKey: userConfig.gemini_api_key,
+          instruction: customInstruction || 'Rewrite into a high-converting, personalized B2B cold outreach email in responsive HTML with paragraph spacing, highlighted synergy callout, and an executive HTML signature.',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to rewrite email with Gemini');
+      }
+
+      const newSubject = data.email_subject || subject;
+      const newBody = data.email_body || body;
+
+      setSubject(newSubject);
+      setBody(newBody);
+
+      // Persist draft to lead in database and context
+      await updateLead(lead.id, {
+        email_subject: newSubject,
+        email_body: newBody,
+        status: lead.status === 'pending' ? 'drafted' : lead.status,
+      });
+
+      setIsPreviewMode(true);
+      setRewriteFeedback('Outreach email successfully rewritten in rich HTML by Gemini!');
+      setTimeout(() => setRewriteFeedback(null), 4500);
+    } catch (err: any) {
+      setSendErrorMessage(err.message || 'Gemini rewrite failed');
+    } finally {
+      setIsRewriting(false);
+    }
   };
 
   const handleApproveAndSend = async () => {
@@ -493,7 +545,7 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
 
           {/* Cold Email Outreach Editor */}
           <div className="rounded-2xl p-5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-amber-500" />
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -501,7 +553,43 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
                 </h4>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Rewrite with Gemini Action Button */}
+                <button
+                  type="button"
+                  onClick={() => handleRewriteWithGemini()}
+                  disabled={isRewriting || isEnriching}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-500 hover:from-teal-500 hover:to-cyan-500 text-white text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                  title="Rewrite and optimize this draft into enriched HTML using Gemini AI"
+                >
+                  {isRewriting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Rewriting Pitch...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                      <span>Rewrite with Gemini</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Tone Angle Options Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowToneMenu(!showToneMenu)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
+                    showToneMenu
+                      ? 'bg-teal-50 dark:bg-cyan-500/20 text-teal-700 dark:text-cyan-300 border-teal-300 dark:border-cyan-500/40'
+                      : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                  title="Select AI rewrite tone & focus angle"
+                >
+                  Angle ▾
+                </button>
+
+                {/* HTML Preview / Edit Draft Toggle */}
                 <button
                   type="button"
                   onClick={() => setIsPreviewMode(!isPreviewMode)}
@@ -510,17 +598,64 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
                   {isPreviewMode ? (
                     <>
                       <Edit3 className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
-                      <span>Edit Draft (Plain Text)</span>
+                      <span>Edit Draft (Text)</span>
                     </>
                   ) : (
                     <>
                       <Eye className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
-                      <span>Preview HTML</span>
+                      <span>Live HTML Preview</span>
                     </>
                   )}
                 </button>
               </div>
             </div>
+
+            {/* Optional Tone Quick-Select Dropdown */}
+            {showToneMenu && (
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-teal-200 dark:border-cyan-500/30 text-xs space-y-2.5 animate-in fade-in shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px] uppercase tracking-wider">
+                    Select Gemini Rewrite Angle
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowToneMenu(false)}
+                    className="text-[10px] text-slate-400 hover:text-slate-600"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: '✨ High-Converting & Warm', prompt: 'Rewrite with a consultative, warm executive tone emphasizing tailored synergy and proven ROI.' },
+                    { label: '⚡ Punchy & Concise (<90 words)', prompt: 'Make the email extremely concise, under 90 words, high impact, direct and low friction.' },
+                    { label: '🎯 Synergy & Operations Focused', prompt: 'Highlight core operational capability, direct customs/freight pipelines, and seamless coordination.' },
+                    { label: '🛡️ Certifications & Trust', prompt: 'Focus on enterprise certifications, regulatory compliance, zero-risk execution, and reliability.' },
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setShowToneMenu(false);
+                        handleRewriteWithGemini(preset.prompt);
+                      }}
+                      disabled={isRewriting}
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-teal-50 dark:hover:bg-cyan-500/10 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 text-xs font-semibold transition-all active:scale-95 shadow-xs"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rewrite Feedback Notification */}
+            {rewriteFeedback && (
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs flex items-center gap-2 shadow-xs animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span className="font-semibold">{rewriteFeedback}</span>
+              </div>
+            )}
 
             {/* Subject Field */}
             <div className="space-y-1.5">
@@ -540,7 +675,7 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {isPreviewMode ? 'Email Preview (Rendered HTML)' : `Email Body (Plain Text Format — Matched to ${profile.company_name} Profile)`}
+                  {isPreviewMode ? 'Live HTML Email Preview' : 'Edit Email Content (Text / HTML)'}
                 </label>
                 <span className="text-[10px] text-slate-400 font-mono">
                   {body.split(/\s+/).filter(Boolean).length} words

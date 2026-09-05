@@ -51,6 +51,9 @@ export interface UserConfig {
   bcc_enabled?: boolean;
   bcc_emails?: string;
   portfolio_url?: string;
+  'Cc-Email'?: string;
+  'Bcc-Email'?: string;
+  'portfolio-link'?: string;
   welcome_email_subject?: string;
   welcome_email_template?: string;
   auto_send_enabled?: boolean;

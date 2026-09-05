@@ -147,13 +147,25 @@ export default function SettingsPage() {
 
   // Synchronize form whenever userConfig loads or updates from database
   useEffect(() => {
+    const ccVal = userConfig.cc_emails || userConfig['Cc-Email'] || '';
+    const bccVal = userConfig.bcc_emails || userConfig['Bcc-Email'] || '';
+    const portfolioVal = userConfig.portfolio_url || userConfig['portfolio-link'] || profile.portfolio_url || '';
+
     setFormData({
       ...userConfig,
       email_signature: userConfig.email_signature || profile.email_signature || '',
-      cc_enabled: userConfig.cc_enabled || false,
-      cc_emails: userConfig.cc_emails || '',
-      bcc_enabled: userConfig.bcc_enabled || false,
-      bcc_emails: userConfig.bcc_emails || '',
+      cc_emails: ccVal,
+      bcc_emails: bccVal,
+      cc_enabled: userConfig.cc_enabled !== undefined 
+        ? userConfig.cc_enabled 
+        : Boolean(ccVal && ccVal.trim().length > 0),
+      bcc_enabled: userConfig.bcc_enabled !== undefined 
+        ? userConfig.bcc_enabled 
+        : Boolean(bccVal && bccVal.trim().length > 0),
+      portfolio_url: portfolioVal,
+      'Cc-Email': ccVal,
+      'Bcc-Email': bccVal,
+      'portfolio-link': portfolioVal,
     });
     if (userConfig.from_email && !testRecipientEmail) {
       setTestRecipientEmail(userConfig.from_email);

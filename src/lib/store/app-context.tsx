@@ -187,13 +187,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const configRes = await fetch(`/api/config/get?userId=${user.id}`);
             const configJson = await configRes.json();
             if (configJson.success && configJson.config) {
-              const mergedConfig = {
+              const cfg = configJson.config;
+              const cc = cfg['Cc-Email'] ?? cfg.cc_emails ?? '';
+              const bcc = cfg['Bcc-Email'] ?? cfg.bcc_emails ?? '';
+              const portLink = cfg['portfolio-link'] ?? cfg.portfolio_url ?? resolvedProfile.portfolio_url ?? '';
+
+              const mergedConfig: UserConfig = {
                 ...DEFAULT_USER_CONFIG,
-                ...configJson.config,
-                email_signature: configJson.config.email_signature || resolvedProfile.email_signature || DEFAULT_USER_CONFIG.email_signature,
+                ...cfg,
+                cc_emails: cc,
+                bcc_emails: bcc,
+                'Cc-Email': cc,
+                'Bcc-Email': bcc,
+                'portfolio-link': portLink,
+                portfolio_url: portLink,
+                cc_enabled: cfg.cc_enabled !== undefined ? cfg.cc_enabled : Boolean(cc && String(cc).trim().length > 0),
+                bcc_enabled: cfg.bcc_enabled !== undefined ? cfg.bcc_enabled : Boolean(bcc && String(bcc).trim().length > 0),
+                email_signature: cfg.email_signature || resolvedProfile.email_signature || DEFAULT_USER_CONFIG.email_signature,
               };
               setUserConfig(mergedConfig);
               localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
+
+              if (portLink && (!resolvedProfile.portfolio_url || resolvedProfile.portfolio_url === DEFAULT_PROFILE.portfolio_url)) {
+                resolvedProfile = { ...resolvedProfile, portfolio_url: portLink };
+                setProfile(resolvedProfile);
+                localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
+              }
             } else {
               const { data: configData } = await supabase
                 .from('user_configs')
@@ -201,9 +220,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 .eq('id', user.id)
                 .single();
               if (configData) {
-                const mergedConfig = {
+                const cc = configData['Cc-Email'] ?? configData.cc_emails ?? '';
+                const bcc = configData['Bcc-Email'] ?? configData.bcc_emails ?? '';
+                const portLink = configData['portfolio-link'] ?? configData.portfolio_url ?? resolvedProfile.portfolio_url ?? '';
+                const mergedConfig: UserConfig = {
                   ...DEFAULT_USER_CONFIG,
                   ...configData,
+                  cc_emails: cc,
+                  bcc_emails: bcc,
+                  'Cc-Email': cc,
+                  'Bcc-Email': bcc,
+                  'portfolio-link': portLink,
+                  portfolio_url: portLink,
+                  cc_enabled: Boolean(cc && String(cc).trim().length > 0),
+                  bcc_enabled: Boolean(bcc && String(bcc).trim().length > 0),
                   email_signature: configData.email_signature || resolvedProfile.email_signature || DEFAULT_USER_CONFIG.email_signature,
                 };
                 setUserConfig(mergedConfig);
@@ -217,8 +247,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               .eq('id', user.id)
               .single();
             if (configData) {
-              setUserConfig(configData);
-              localStorage.setItem('marketpulse_config', JSON.stringify(configData));
+              const cc = configData['Cc-Email'] ?? configData.cc_emails ?? '';
+              const bcc = configData['Bcc-Email'] ?? configData.bcc_emails ?? '';
+              const portLink = configData['portfolio-link'] ?? configData.portfolio_url ?? '';
+              const mergedConfig: UserConfig = {
+                ...DEFAULT_USER_CONFIG,
+                ...configData,
+                cc_emails: cc,
+                bcc_emails: bcc,
+                'Cc-Email': cc,
+                'Bcc-Email': bcc,
+                'portfolio-link': portLink,
+                portfolio_url: portLink,
+                cc_enabled: Boolean(cc && String(cc).trim().length > 0),
+                bcc_enabled: Boolean(bcc && String(bcc).trim().length > 0),
+              };
+              setUserConfig(mergedConfig);
+              localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
             }
           }
 
@@ -531,6 +576,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = async (newProfile: Profile) => {
     setProfile(newProfile);
+    if (newProfile.portfolio_url) {
+      setUserConfig(prev => ({
+        ...prev,
+        portfolio_url: newProfile.portfolio_url,
+        'portfolio-link': newProfile.portfolio_url,
+      }));
+    }
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_profile', JSON.stringify(newProfile));
     }
@@ -551,6 +603,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       if (data.success && data.profile) {
         setProfile(data.profile);
+        if (data.profile.portfolio_url) {
+          setUserConfig(prev => ({
+            ...prev,
+            portfolio_url: data.profile.portfolio_url,
+            'portfolio-link': data.profile.portfolio_url,
+          }));
+        }
         if (typeof window !== 'undefined') {
           localStorage.setItem('marketpulse_profile', JSON.stringify(data.profile));
         }
@@ -562,6 +621,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateUserConfig = async (newConfig: UserConfig) => {
     setUserConfig(newConfig);
+    if (newConfig.portfolio_url) {
+      setProfile(prev => ({
+        ...prev,
+        portfolio_url: newConfig.portfolio_url,
+      }));
+    }
     if (typeof window !== 'undefined') {
       localStorage.setItem('marketpulse_config', JSON.stringify(newConfig));
     }

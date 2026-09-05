@@ -95,9 +95,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: saveError.message }, { status: 500 });
     }
 
+    // 3. Persist portfolio-link in user_configs table
+    const portfolioLink = profile.portfolio_url !== undefined 
+      ? String(profile.portfolio_url).trim() 
+      : (profile['portfolio-link'] !== undefined ? String(profile['portfolio-link']).trim() : '');
+
+    try {
+      await adminSupabase
+        .from('user_configs')
+        .upsert({
+          id: userId,
+          'portfolio-link': portfolioLink,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+    } catch (cfgErr) {
+      console.error('Error persisting portfolio-link to user_configs:', cfgErr);
+    }
+
     const mergedProfile = {
       ...savedData,
       contact_person: profile.contact_person || savedData?.contact_person || 'Operations Lead',
+      portfolio_url: portfolioLink || savedData?.portfolio_url || '',
     };
 
     return NextResponse.json({

@@ -56,6 +56,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Extract CC, BCC, and portfolio link with fallback across casing and aliases
+    const ccVal = config?.cc_emails !== undefined 
+      ? String(config.cc_emails).trim()
+      : (config?.['Cc-Email'] !== undefined ? String(config['Cc-Email']).trim() : (existingConfig?.['Cc-Email'] ?? existingConfig?.cc_emails ?? ''));
+
+    const bccVal = config?.bcc_emails !== undefined 
+      ? String(config.bcc_emails).trim()
+      : (config?.['Bcc-Email'] !== undefined ? String(config['Bcc-Email']).trim() : (existingConfig?.['Bcc-Email'] ?? existingConfig?.bcc_emails ?? ''));
+
+    const portfolioVal = config?.portfolio_url !== undefined 
+      ? String(config.portfolio_url).trim()
+      : (config?.['portfolio-link'] !== undefined ? String(config['portfolio-link']).trim() : (existingConfig?.['portfolio-link'] ?? existingConfig?.portfolio_url ?? ''));
+
+    const isCcEnabled = config?.cc_enabled !== undefined ? Boolean(config.cc_enabled) : Boolean(ccVal && ccVal.length > 0);
+    const isBccEnabled = config?.bcc_enabled !== undefined ? Boolean(config.bcc_enabled) : Boolean(bccVal && bccVal.length > 0);
+
     const baseUpsertPayload: Record<string, any> = {
       id: userId,
       gemini_api_key: finalGeminiKey,
@@ -70,21 +86,26 @@ export async function POST(req: NextRequest) {
       max_daily_emails: config?.max_daily_emails !== undefined ? Number(config.max_daily_emails) : (existingConfig?.max_daily_emails ?? 50),
       max_hourly_rate: config?.max_hourly_rate !== undefined ? Number(config.max_hourly_rate) : (existingConfig?.max_hourly_rate ?? 15),
       updated_at: new Date().toISOString(),
+      // Custom user-defined columns in public.user_configs
+      'Cc-Email': isCcEnabled ? ccVal : '',
+      'Bcc-Email': isBccEnabled ? bccVal : '',
+      'portfolio-link': portfolioVal,
     };
 
+    // Full payload including optional columns if present in schema
     const fullUpsertPayload: Record<string, any> = {
       ...baseUpsertPayload,
-      cc_enabled: config?.cc_enabled !== undefined ? Boolean(config.cc_enabled) : (existingConfig?.cc_enabled ?? false),
-      cc_emails: config?.cc_emails !== undefined ? String(config.cc_emails) : (existingConfig?.cc_emails ?? ''),
-      bcc_enabled: config?.bcc_enabled !== undefined ? Boolean(config.bcc_enabled) : (existingConfig?.bcc_enabled ?? false),
-      bcc_emails: config?.bcc_emails !== undefined ? String(config.bcc_emails) : (existingConfig?.bcc_emails ?? ''),
+      cc_enabled: isCcEnabled,
+      cc_emails: ccVal,
+      bcc_enabled: isBccEnabled,
+      bcc_emails: bccVal,
       email_signature: config?.email_signature !== undefined ? String(config.email_signature) : (existingConfig?.email_signature ?? ''),
     };
 
     let savedData: any = null;
     let saveError: any = null;
 
-    // First attempt: try saving with new CC/BCC and signature columns
+    // First attempt: try saving with optional columns
     const { data: fullData, error: fullError } = await adminSupabase
       .from('user_configs')
       .upsert(fullUpsertPayload, { onConflict: 'id' })
@@ -94,7 +115,7 @@ export async function POST(req: NextRequest) {
     if (!fullError) {
       savedData = fullData;
     } else {
-      // Fallback: save standard base columns if new columns have not been added yet via migration
+      // Fallback: save with guaranteed columns including Cc-Email, Bcc-Email, and portfolio-link
       const { data: baseData, error: baseError } = await adminSupabase
         .from('user_configs')
         .upsert(baseUpsertPayload, { onConflict: 'id' })
@@ -104,15 +125,23 @@ export async function POST(req: NextRequest) {
       if (baseError) {
         saveError = baseError;
       } else {
-        savedData = {
-          ...baseData,
-          cc_enabled: fullUpsertPayload.cc_enabled,
-          cc_emails: fullUpsertPayload.cc_emails,
-          bcc_enabled: fullUpsertPayload.bcc_enabled,
-          bcc_emails: fullUpsertPayload.bcc_emails,
-          email_signature: fullUpsertPayload.email_signature,
-        };
+        savedData = baseData;
       }
+    }
+
+    if (savedData) {
+      savedData = {
+        ...savedData,
+        'Cc-Email': isCcEnabled ? ccVal : '',
+        'Bcc-Email': isBccEnabled ? bccVal : '',
+        'portfolio-link': portfolioVal,
+        cc_emails: ccVal,
+        bcc_emails: bccVal,
+        portfolio_url: portfolioVal,
+        cc_enabled: isCcEnabled,
+        bcc_enabled: isBccEnabled,
+        email_signature: config?.email_signature ?? existingConfig?.email_signature ?? '',
+      };
     }
 
     if (saveError) {
