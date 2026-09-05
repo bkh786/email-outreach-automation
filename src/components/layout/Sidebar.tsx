@@ -250,6 +250,12 @@ export default function Sidebar() {
           <button
             onClick={async () => {
               if (confirm('Sign out of MarketPulse AI & Automation?')) {
+                try {
+                  localStorage.removeItem('marketpulse_profile');
+                  localStorage.removeItem('marketpulse_config');
+                  localStorage.removeItem('marketpulse_leads');
+                  localStorage.removeItem('marketpulse_logs');
+                } catch {}
                 const { createClient } = await import('@/lib/supabase/client');
                 const supabase = createClient();
                 await supabase.auth.signOut();

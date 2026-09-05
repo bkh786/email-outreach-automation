@@ -86,7 +86,6 @@ export async function POST(req: NextRequest) {
       auto_send_enabled: config?.auto_send_enabled !== undefined ? Boolean(config.auto_send_enabled) : (existingConfig?.auto_send_enabled ?? false),
       max_daily_emails: config?.max_daily_emails !== undefined ? Number(config.max_daily_emails) : (existingConfig?.max_daily_emails ?? 50),
       max_hourly_rate: config?.max_hourly_rate !== undefined ? Number(config.max_hourly_rate) : (existingConfig?.max_hourly_rate ?? 15),
-      email_signature: config?.email_signature !== undefined ? String(config.email_signature) : (existingConfig?.email_signature ?? ''),
       updated_at: new Date().toISOString(),
       // Custom user-defined columns in public.user_configs
       'Cc-Email': isCcEnabled ? ccVal : '',
@@ -101,7 +100,6 @@ export async function POST(req: NextRequest) {
       cc_emails: ccVal,
       bcc_enabled: isBccEnabled,
       bcc_emails: bccVal,
-      email_signature: config?.email_signature !== undefined ? String(config.email_signature) : (existingConfig?.email_signature ?? ''),
     };
 
     let savedData: any = null;

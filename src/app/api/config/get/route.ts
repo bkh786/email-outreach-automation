@@ -58,20 +58,18 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    // Pull signature and portfolio from profiles if missing in user_configs
+    // Pull signature from profiles if available
     if (userId) {
       try {
         const { data: profile } = await adminSupabase
           .from('profiles')
-          .select('email_signature, portfolio_url')
+          .select('email_signature')
           .eq('id', userId)
           .single();
         if (profile) {
           config = {
             ...(config || { id: userId }),
             email_signature: config?.email_signature || profile.email_signature || '',
-            portfolio_url: config?.portfolio_url || profile.portfolio_url || '',
-            'portfolio-link': config?.['portfolio-link'] || profile.portfolio_url || '',
           };
         }
       } catch {

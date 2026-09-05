@@ -650,7 +650,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await response.json();
-      if (data.success && data.profile) {
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save profile to database');
+      }
+
+      if (data.profile) {
         setProfile(data.profile);
         if (data.profile.portfolio_url) {
           setUserConfig(prev => ({
@@ -663,8 +667,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('marketpulse_profile', JSON.stringify(data.profile));
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating profile in database:', err);
+      throw err;
     }
   };
 
