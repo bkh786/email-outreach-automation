@@ -5,7 +5,7 @@ import { enrichLeadWithGemini } from '@/lib/gemini';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { lead, userProfile, apiKey } = body;
+    const { lead, userProfile, userConfig, apiKey } = body;
 
     if (!lead || !lead.company_name) {
       return NextResponse.json(
@@ -13,6 +13,17 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const effectiveSignature = 
+      userProfile?.email_signature?.trim() || 
+      userConfig?.email_signature?.trim() || 
+      '';
+
+    const effectiveProfile = {
+      ...(userProfile || {}),
+      email_signature: effectiveSignature,
+      portfolio_url: userProfile?.portfolio_url || userConfig?.portfolio_url || (userConfig as any)?.['portfolio-link'],
+    };
 
     // Step 1: Web Scraping if URL is provided
     let scrapedData = null;
@@ -28,7 +39,7 @@ export async function POST(req: NextRequest) {
     const enrichment = await enrichLeadWithGemini(
       lead,
       scrapedData,
-      userProfile || {},
+      effectiveProfile,
       apiKey
     );
 

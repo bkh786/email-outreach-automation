@@ -210,6 +210,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               setUserConfig(mergedConfig);
               localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
 
+              const effectiveSig = cfg.email_signature || resolvedProfile.email_signature;
+              if (effectiveSig && (!resolvedProfile.email_signature || resolvedProfile.email_signature === DEFAULT_PROFILE.email_signature)) {
+                resolvedProfile = { ...resolvedProfile, email_signature: effectiveSig };
+                setProfile(resolvedProfile);
+                localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
+              }
+
               if (portLink && (!resolvedProfile.portfolio_url || resolvedProfile.portfolio_url === DEFAULT_PROFILE.portfolio_url)) {
                 resolvedProfile = { ...resolvedProfile, portfolio_url: portLink };
                 setProfile(resolvedProfile);
@@ -241,6 +248,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 activeUserConfig = mergedConfig;
                 setUserConfig(mergedConfig);
                 localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
+
+                const effectiveSig = configData.email_signature || resolvedProfile.email_signature;
+                if (effectiveSig && (!resolvedProfile.email_signature || resolvedProfile.email_signature === DEFAULT_PROFILE.email_signature)) {
+                  resolvedProfile = { ...resolvedProfile, email_signature: effectiveSig };
+                  setProfile(resolvedProfile);
+                  localStorage.setItem('marketpulse_profile', JSON.stringify(resolvedProfile));
+                }
               }
             }
           } catch {
@@ -483,12 +497,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateLead(id, { status: 'enriching', error_message: undefined });
 
     try {
+      const effectiveProfile = {
+        ...profile,
+        email_signature: userConfig.email_signature || profile.email_signature || '',
+        portfolio_url: userConfig.portfolio_url || (userConfig as any)?.['portfolio-link'] || profile.portfolio_url || '',
+      };
+
       const response = await fetch('/api/leads/enrich', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lead,
-          userProfile: profile,
+          userProfile: effectiveProfile,
+          userConfig,
           apiKey: userConfig.gemini_api_key,
         }),
       });

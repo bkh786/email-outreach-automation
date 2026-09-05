@@ -333,7 +333,10 @@ export function enforceEmailSignature(
   // 1. Strip already-injected signature container if present
   cleanedBody = cleanedBody.replace(/<div style="margin-top:\s*24px;[\s\S]*$/i, '').trim();
 
-  // 2. Strip any sign-offs or signature blocks at the end of the text/HTML
+  // 2. Strip trailing <hr> if any
+  cleanedBody = cleanedBody.replace(/<hr[^>]*>\s*$/i, '').trim();
+
+  // 3. Strip any sign-offs or signature blocks starting with Thanks & Regards, Best regards, etc.
   const signOffPatterns = [
     /(?:<hr[^>]*>\s*)?(?:<p[^>]*>|\n|\s)*(?:Thanks\s*(?:&|and)?\s*Regards|Best\s*regards|Warm\s*regards|Sincerely|Kind\s*regards|Cheers|With\s*regards|Regards)[,]?(?:\s*<\/p>)?[\s\S]*$/i,
     /(?:<p[^>]*>|\n|\s)*\[(?:Name|Team|Company Name|Phone|Email|Address|Portfolio)\][\s\S]*$/i,
@@ -353,18 +356,87 @@ export function enforceEmailSignature(
     }
   }
 
-  // 3. Ensure outer HTML container
+  // Detect company and sender from profile or activeSignature for targeted stripping
+  const companyFromProfile = profile?.company_name || '';
+  const senderFromProfile = profile?.contact_person || '';
+  const linesOfSig = (activeSignature || extractedAiSignature).split('\n').map(l => l.trim()).filter(Boolean);
+  const companyFromSig = linesOfSig.length > 1 && !linesOfSig[1].includes('@') && !linesOfSig[1].toLowerCase().includes('http') && !linesOfSig[1].toLowerCase().includes('phone') ? linesOfSig[1] : '';
+  const senderFromSig = linesOfSig.length > 0 && !/^(?:thanks|best|warm|sincerely|regards)/i.test(linesOfSig[0]) ? linesOfSig[0] : (linesOfSig[1] || '');
+
+  const companyCandidates = [companyFromProfile, companyFromSig].filter(Boolean);
+  const senderCandidates = [senderFromProfile, senderFromSig].filter(Boolean);
+
+  // 4. Strip trailing contact blocks starting with company or sender name
+  for (const comp of companyCandidates) {
+    const esc = comp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const compPattern = new RegExp(
+      `(?:<hr[^>]*>\\s*)?(?:<p[^>]*>|\\n|\\s)*(?:<strong>)?(?:${esc})(?:<\\/strong>)?(?:<br\\s*\\/?>|\\n|\\s)*(?:Email:|Address:|Phone:|Website:|LinkedIn:|Plot|Tel:|http)[\\s\\S]*$`,
+      'i'
+    );
+    cleanedBody = cleanedBody.replace(compPattern, '').trim();
+  }
+
+  for (const snd of senderCandidates) {
+    const esc = snd.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const sndPattern = new RegExp(
+      `(?:<hr[^>]*>\\s*)?(?:<p[^>]*>|\\n|\\s)*(?:<strong>)?(?:${esc})(?:<\\/strong>)?(?:<br\\s*\\/?>|\\n|\\s)*(?:[A-Za-z0-9\\s.,&-]+<br\\s*\\/?>)?(?:Email:|Address:|Phone:|Website:|LinkedIn:|Plot|Tel:|http)[\\s\\S]*$`,
+      'i'
+    );
+    cleanedBody = cleanedBody.replace(sndPattern, '').trim();
+  }
+
+  // 5. Strip trailing blocks starting with contact markers
+  const trailingContactPattern = /(?:<hr[^>]*>\s*)?(?:<p[^>]*>|\n|\s)*(?:Email:|Phone\s*(?:No\.?)?:|Address:|Contact:|Website:|LinkedIn:)[^<>]*(?:<br\s*\/?>|\n)[\s\S]*$/i;
+  cleanedBody = cleanedBody.replace(trailingContactPattern, '').trim();
+
+  // 6. Robust loop to strip any remaining trailing <p> or <div> that is an AI sign-off or contact block
+  while (true) {
+    const before = cleanedBody;
+    cleanedBody = cleanedBody.replace(/<hr[^>]*>\s*$/i, '').trim();
+    cleanedBody = cleanedBody.replace(/<p[^>]*>\s*<\/p>\s*$/i, '').trim();
+
+    // Match the LAST <p>...</p> element at the end of the string
+    const lastPMatch = cleanedBody.match(/<p[^>]*>((?:(?!<p[\s>])[\s\S])*?)<\/p>\s*$/i);
+    if (lastPMatch) {
+      const fullMatch = lastPMatch[0];
+      const content = lastPMatch[1];
+      const lower = content.toLowerCase();
+      const isContactBlock = 
+        (lower.includes('email:') || lower.includes('@')) &&
+        (lower.includes('phone') || lower.includes('address') || lower.includes('plot') || lower.includes('tel:') || lower.includes('linkedin') || lower.includes('website') || lower.includes('http') || lower.includes('wa:'));
+      const isSignOff = /^(?:<br\s*\/?>|\s)*(?:thanks|best|warm|sincerely|regards|cheers|with regards)/i.test(content.trim());
+      const isCompanyOrSender = companyCandidates.some(c => lower.startsWith(c.toLowerCase()) || lower.includes(c.toLowerCase())) && (lower.includes('email') || lower.includes('phone') || lower.includes('address'));
+
+      if (isContactBlock || isSignOff || isCompanyOrSender) {
+        cleanedBody = cleanedBody.slice(0, cleanedBody.length - fullMatch.length).trim();
+        continue;
+      }
+    }
+    if (cleanedBody === before) break;
+  }
+
+  // 7. Strip any trailing <hr> or empty paragraphs
+  cleanedBody = cleanedBody.replace(/<hr[^>]*>\s*$/i, '').replace(/<p[^>]*>\s*<\/p>\s*$/i, '').trim();
+
+  // 8. Ensure outer HTML container
   const isHtml = /<(p|div|table|span|ul)[^>]*>/i.test(cleanedBody);
   let finalHtmlBody = isHtml ? cleanedBody : convertPlainBodyToRichHtml(cleanedBody, profile);
 
-  // If ends with </div>, remove it so we can inject signature inside
-  finalHtmlBody = finalHtmlBody.replace(/<\/div>\s*$/i, '').trim();
+  // If ends with </div>, check whether it had an opening <div
+  const hadClosingDiv = /<\/div>\s*$/i.test(finalHtmlBody);
+  if (hadClosingDiv) {
+    finalHtmlBody = finalHtmlBody.replace(/<\/div>\s*$/i, '').trim();
+  }
 
-  // 4. Attach exactly ONE iconified HTML signature card
+  // 9. Attach exactly ONE iconified HTML signature card
   const sigToFormat = activeSignature || extractedAiSignature || '';
   const htmlSig = formatSignatureAsHtml(sigToFormat, profile);
 
-  return `${finalHtmlBody}\n\n  ${htmlSig}\n</div>`;
+  if (hadClosingDiv && /<div[^>]*>/i.test(finalHtmlBody)) {
+    return `${finalHtmlBody}\n\n  ${htmlSig}\n</div>`;
+  }
+
+  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b; max-width: 620px;">\n${finalHtmlBody}\n\n  ${htmlSig}\n</div>`;
 }
 
 export async function enrichLeadWithGemini(
@@ -392,12 +464,16 @@ export async function enrichLeadWithGemini(
     ? `### SENDER SIGNATURE POLICY:
 The sender has their official, verified email signature pre-configured in their settings panel.
 CRITICAL MANDATE:
-DO NOT generate or output ANY closing sign-off (e.g., do NOT write "Best regards,", "Thanks & Regards,", "Sincerely,", etc.), and do NOT generate any sender name, company name, address, phone number, or signature block at all.
+- DO NOT generate or output ANY closing sign-off (e.g., do NOT write "Best regards,", "Thanks & Regards,", "Sincerely,", etc.).
+- DO NOT generate ANY sender name (e.g., do NOT write "${userProfile.contact_person || ''}").
+- DO NOT generate the company name ("${userProfile.company_name}") or any sender contact block at the bottom of the email.
+- DO NOT generate any contact lines (no Email:, no Phone:, no Address:, no Website:, no LinkedIn:) at the end.
+- DO NOT generate any signature block or horizontal divider line.
 Stop the email body IMMEDIATELY after your final Call to Action sentence. The system will automatically attach the verified signature from the signature panel.`
     : `### SENDER SIGNATURE POLICY:
 The signature panel is currently blank.
 MANDATE:
-Generate a professional, high-credibility closing sign-off and sender signature synthesized directly from the sender's website (${senderWebsite || 'https://www.digipresence.in'}), company name (${userProfile.company_name || 'Digi Presence Solutions'}), contact person (${userProfile.contact_person || 'Operations & Growth Team'}), and core services. Include the sender's website and contact touchpoints.`;
+Generate a single, professional closing sign-off and sender signature synthesized directly from the sender's website (${senderWebsite || 'https://www.digipresence.in'}), company name (${userProfile.company_name || 'Digi Presence Solutions'}), contact person (${userProfile.contact_person || 'Operations & Growth Team'}), and core services. Include the sender's website and contact touchpoints.`;
 
   const prompt = `
 You are an expert enterprise B2B cold outreach copywriter and business development strategist.

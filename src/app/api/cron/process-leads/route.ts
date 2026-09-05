@@ -143,11 +143,17 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          // 3. AI Enrichment
+          // 3. AI Enrichment with synchronized profile and signature
+          const effectiveProfile = {
+            ...userProfile,
+            email_signature: userProfile?.email_signature || userConfig?.email_signature || '',
+            portfolio_url: userProfile?.portfolio_url || userConfig?.portfolio_url || userConfig?.['portfolio-link'] || '',
+          };
+
           const enrichment = await enrichLeadWithGemini(
             lead,
             scrapedData,
-            userProfile,
+            effectiveProfile,
             userConfig.gemini_api_key
           );
 

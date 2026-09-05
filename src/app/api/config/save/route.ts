@@ -47,10 +47,11 @@ export async function POST(req: NextRequest) {
     // Sync email_signature to profiles table if provided
     if (config?.email_signature !== undefined && userId) {
       try {
-        await adminSupabase.from('profiles').update({
+        await adminSupabase.from('profiles').upsert({
+          id: userId,
           email_signature: config.email_signature,
           updated_at: new Date().toISOString(),
-        }).eq('id', userId);
+        }, { onConflict: 'id' });
       } catch (err) {
         console.error('Error syncing email_signature to profiles table:', err);
       }
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
       auto_send_enabled: config?.auto_send_enabled !== undefined ? Boolean(config.auto_send_enabled) : (existingConfig?.auto_send_enabled ?? false),
       max_daily_emails: config?.max_daily_emails !== undefined ? Number(config.max_daily_emails) : (existingConfig?.max_daily_emails ?? 50),
       max_hourly_rate: config?.max_hourly_rate !== undefined ? Number(config.max_hourly_rate) : (existingConfig?.max_hourly_rate ?? 15),
+      email_signature: config?.email_signature !== undefined ? String(config.email_signature) : (existingConfig?.email_signature ?? ''),
       updated_at: new Date().toISOString(),
       // Custom user-defined columns in public.user_configs
       'Cc-Email': isCcEnabled ? ccVal : '',

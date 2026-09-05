@@ -136,6 +136,17 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
     setSendErrorMessage(null);
 
     try {
+      // Clean previous body to strip existing signature card and sign-offs before rewrite
+      const cleanBodyForRewrite = body
+        .replace(/<div style="margin-top:\s*24px;[\s\S]*$/i, '')
+        .replace(/(?:<hr[^>]*>\s*)?(?:<p[^>]*>|\n|\s)*(?:Thanks\s*(?:&|and)?\s*Regards|Best\s*regards|Warm\s*regards|Sincerely|Kind\s*regards|Cheers|With\s*regards|Regards)[\s\S]*$/i, '')
+        .trim();
+
+      const effectiveProfile = {
+        ...profile,
+        email_signature: userConfig.email_signature || profile.email_signature || '',
+      };
+
       const res = await fetch('/api/leads/rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,11 +154,12 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
           lead: {
             ...lead,
             email_subject: subject,
-            email_body: body,
+            email_body: cleanBodyForRewrite,
           },
-          userProfile: profile,
+          userProfile: effectiveProfile,
+          userConfig,
           apiKey: userConfig.gemini_api_key,
-          instruction: customInstruction || 'Rewrite into a high-converting, personalized B2B cold outreach email in responsive HTML with paragraph spacing, highlighted synergy callout, and an executive HTML signature.',
+          instruction: customInstruction || 'Rewrite into a high-converting, personalized B2B cold outreach email in responsive HTML with paragraph spacing and highlighted synergy callout. End with a clear call to action.',
         }),
       });
 
