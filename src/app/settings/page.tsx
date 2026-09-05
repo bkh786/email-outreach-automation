@@ -99,7 +99,7 @@ const SMTP_PRESETS: SmtpPreset[] = [
 ];
 
 export default function SettingsPage() {
-  const { userConfig, updateUserConfig, resetToDemoData, profile, currentUserEmail } = useApp();
+  const { userConfig, updateUserConfig, updateProfile, resetToDemoData, profile, currentUserEmail } = useApp();
 
   const isSuperAdmin = 
     profile.role === 'super_admin' || 
@@ -112,6 +112,8 @@ export default function SettingsPage() {
   const [selectedPresetId, setSelectedPresetId] = useState<string>('gmail');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSavingSignature, setIsSavingSignature] = useState(false);
+  const [signatureSavedFeedback, setSignatureSavedFeedback] = useState<string | null>(null);
 
   // Gemini Test state
   const [isTestingGemini, setIsTestingGemini] = useState(false);
@@ -153,7 +155,7 @@ export default function SettingsPage() {
 
     setFormData({
       ...userConfig,
-      email_signature: userConfig.email_signature || profile.email_signature || '',
+      email_signature: profile.email_signature || userConfig.email_signature || '',
       cc_emails: ccVal,
       bcc_emails: bccVal,
       cc_enabled: userConfig.cc_enabled !== undefined 
@@ -272,13 +274,45 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveSignature = async () => {
+    setIsSavingSignature(true);
+    setSignatureSavedFeedback(null);
+    try {
+      const sigToSave = formData.email_signature ?? profile.email_signature ?? '';
+      await updateProfile({
+        ...profile,
+        email_signature: sigToSave,
+      });
+      await updateUserConfig({
+        ...formData,
+        email_signature: sigToSave,
+      });
+      setSignatureSavedFeedback('Signature saved to database!');
+      setTimeout(() => setSignatureSavedFeedback(null), 3500);
+    } catch (err: any) {
+      alert('Failed to save signature: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsSavingSignature(false);
+    }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    await updateUserConfig(formData);
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    try {
+      const sigToSave = formData.email_signature ?? profile.email_signature ?? '';
+      await updateProfile({
+        ...profile,
+        email_signature: sigToSave,
+      });
+      await updateUserConfig(formData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      alert('Error saving configuration: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleTestGeminiKey = async () => {
@@ -694,16 +728,30 @@ export default function SettingsPage() {
 
           {/* Standard Outgoing Email Signature Section */}
           <div className="pt-5 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-teal-600 dark:text-cyan-400" />
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                   Standard Outgoing Email Signature
                 </h4>
               </div>
-              <span className="text-[11px] text-teal-600 dark:text-cyan-400 font-semibold">
-                Strictly applied to all AI-generated outreach drafts
-              </span>
+              <div className="flex items-center gap-2.5">
+                {signatureSavedFeedback && (
+                  <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/20 animate-in fade-in">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{signatureSavedFeedback}</span>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSaveSignature}
+                  disabled={isSavingSignature}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition-all shadow-sm disabled:opacity-60 cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSavingSignature ? 'Saving...' : 'Save Signature'}</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2 text-xs">
@@ -714,9 +762,14 @@ export default function SettingsPage() {
                 placeholder={`Thanks & Regards\nOperations & Growth Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | https://www.digipresence.in\nLinkedIn: https://linkedin.com/company/digipresence-solutions`}
                 className="w-full bg-slate-50 dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-slate-900 dark:text-slate-200 focus:border-teal-500 dark:focus:border-cyan-500 focus:outline-none font-mono leading-relaxed text-xs shadow-inner"
               />
-              <p className="text-[11px] text-slate-400">
-                Pattern: Thanks &amp; Regards &bull; [Name / Team] &bull; [Company Name] &bull; [Email] &bull; [Address | Phone | Website] &bull; [Portfolio / Social Links]
-              </p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
+                <p className="text-[11px] text-slate-400">
+                  Pattern: Thanks &amp; Regards &bull; [Name / Team] &bull; [Company Name] &bull; [Email] &bull; [Address | Phone | Website] &bull; [Portfolio / Social Links]
+                </p>
+                <span className="text-[10px] text-teal-600 dark:text-cyan-400 font-semibold">
+                  Strictly applied to all AI-generated outreach drafts
+                </span>
+              </div>
             </div>
           </div>
 

@@ -104,7 +104,10 @@ export default function BrandProfilePage() {
     if (e) e.preventDefault();
     setIsSaving(true);
     try {
-      await updateProfile(formData);
+      await updateProfile({
+        ...formData,
+        email_signature: formData.email_signature || profile.email_signature || '',
+      });
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3500);
     } catch (err: any) {
@@ -153,7 +156,7 @@ export default function BrandProfilePage() {
         strengths_and_certifications: data.profile.strengths_and_certifications || formData.strengths_and_certifications,
         services_offered: data.profile.services_offered?.length ? data.profile.services_offered : formData.services_offered,
         target_markets: data.profile.target_markets?.length ? data.profile.target_markets : formData.target_markets,
-        email_signature: data.profile.email_signature || formData.email_signature,
+        email_signature: profile.email_signature || formData.email_signature || data.profile.email_signature || '',
       };
 
       // Populate form state ONLY (does not save to DB until user clicks Save)

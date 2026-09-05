@@ -47,11 +47,22 @@ export async function POST(req: NextRequest) {
     // Sync email_signature to profiles table if provided
     if (config?.email_signature !== undefined && userId) {
       try {
-        await adminSupabase.from('profiles').upsert({
-          id: userId,
-          email_signature: config.email_signature,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' });
+        const { error: updateErr } = await adminSupabase
+          .from('profiles')
+          .update({
+            email_signature: config.email_signature,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', userId);
+
+        if (updateErr) {
+          console.warn('Profiles update error, attempting upsert fallback:', updateErr);
+          await adminSupabase.from('profiles').upsert({
+            id: userId,
+            email_signature: config.email_signature,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' });
+        }
       } catch (err) {
         console.error('Error syncing email_signature to profiles table:', err);
       }

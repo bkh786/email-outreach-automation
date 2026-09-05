@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
 
     // Resolve API key from body, database user_configs, or system env
     let activeKey = apiKey;
+    let existingSignature: string | null = null;
 
     if (!activeKey || activeKey.trim() === '') {
       try {
@@ -33,6 +34,15 @@ export async function POST(req: NextRequest) {
             .single();
           if (config?.gemini_api_key) {
             activeKey = config.gemini_api_key;
+          }
+
+          const { data: prof } = await adminSupabase
+            .from('profiles')
+            .select('email_signature')
+            .eq('id', user.id)
+            .single();
+          if (prof?.email_signature && prof.email_signature.trim().length > 0) {
+            existingSignature = prof.email_signature;
           }
         }
         if (!activeKey) {
@@ -246,7 +256,7 @@ Return ONLY valid JSON matching this schema without markdown code fences or conv
         strengths_and_certifications: finalStrengths,
         services_offered: finalServices,
         target_markets: finalMarkets,
-        email_signature: finalSignature,
+        email_signature: existingSignature || finalSignature,
       }
     });
   } catch (error: any) {
