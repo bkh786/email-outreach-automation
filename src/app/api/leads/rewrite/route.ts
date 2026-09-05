@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
     }
 
     const rawKey = apiKey || process.env.GEMINI_API_KEY;
-    const targetSignature = (userProfile?.email_signature && userProfile.email_signature.trim().length > 0)
-      ? userProfile.email_signature.trim()
-      : 'Thanks & Regards\nGrowth & Strategy Team\nDigi Presence Solutions\nEmail: contact@digipresence.in\nAddress: Registered Office | Phone No.: +91 9064435909 | www.digipresence.in';
+    const hasPanelSignature = Boolean(userProfile?.email_signature && userProfile.email_signature.trim().length > 0);
+    const panelSignature = userProfile?.email_signature?.trim() || '';
+    const senderWebsite = userProfile?.website_url || '';
 
     const portfolioUrl = userProfile?.portfolio_url || (userProfile as any)?.['portfolio-link'];
     const customDirective = instruction && instruction.trim().length > 0 
@@ -35,12 +35,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         email_subject: lead.email_subject || `Strategic partnership & growth for ${lead.company_name}`,
-        email_body: generateFallbackRewrite(lead, userProfile, targetSignature, portfolioUrl),
+        email_body: generateFallbackRewrite(lead, userProfile, panelSignature, portfolioUrl),
       });
     }
 
     const cleanedKey = rawKey.trim().replace(/^['"]|['"]$/g, '');
     const candidateModels = await getLiveGeminiModels(cleanedKey);
+
+    const signatureInstructions = hasPanelSignature
+      ? `### SENDER SIGNATURE POLICY:
+The sender has their official, verified email signature pre-configured in their settings panel.
+CRITICAL MANDATE:
+DO NOT generate or output ANY closing sign-off (e.g., do NOT write "Best regards,", "Thanks & Regards,", "Sincerely,", etc.), and do NOT generate any sender name, company name, address, phone number, or signature block at all.
+Stop the email body IMMEDIATELY after your final Call to Action sentence. The system will automatically attach the verified signature from the signature panel.`
+      : `### SENDER SIGNATURE POLICY:
+The signature panel is currently blank.
+MANDATE:
+Generate a professional, high-credibility closing sign-off and sender signature synthesized directly from the sender's website (${senderWebsite || 'https://www.digipresence.in'}), company name (${userProfile?.company_name || 'Digi Presence Solutions'}), contact person (${userProfile?.contact_person || 'Operations & Growth Team'}), and core services. Include the sender's website and contact touchpoints.`;
 
     const prompt = `
 You are an expert B2B cold email copywriter specializing in high-converting outreach.
@@ -57,6 +68,8 @@ ${customDirective}
 - Certifications / Strengths: ${userProfile?.strengths_and_certifications || 'Enterprise verified'}
 ${portfolioUrl ? `- Company Credentials / Portfolio Deck (URL): ${portfolioUrl}` : ''}
 
+${signatureInstructions}
+
 ### PROSPECT DATA:
 - Company Name: ${lead.company_name}
 - Contact Person: ${lead.contact_person || 'Operations Lead'}
@@ -69,14 +82,11 @@ ${portfolioUrl ? `- Company Credentials / Portfolio Deck (URL): ${portfolioUrl}`
 ${lead.email_body ? lead.email_body.slice(0, 1500) : 'None'}
 """
 
-### SENDER'S SIGNATURE:
-${targetSignature}
-
 ### OUTPUT SPECIFICATIONS:
 Respond ONLY with a valid JSON object matching this schema:
 {
   "email_subject": "A fresh, compelling, 4-7 word subject line tailored to the prospect (no spam triggers).",
-  "email_body": "A tailored, high-converting B2B cold outreach email formatted in clean, professional HTML with inline styles. Use <p style='margin: 0 0 16px 0; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b;'> for paragraphs. Use <strong> for emphasis. Include a styled callout box (<div style='margin: 16px 0; padding: 14px 18px; background-color: #f8fafc; border-left: 3px solid #0d9488; border-radius: 0 8px 8px 0; font-size: 14px; line-height: 1.6; color: #334155;'>...</div>) for core value proposition. End with a low-friction CTA (reply to email or call). Conclude with the sender's signature."
+  "email_body": "A tailored, high-converting B2B cold outreach email formatted in clean, professional HTML with inline styles. Use <p style='margin: 0 0 16px 0; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b;'> for paragraphs. Use <strong> for emphasis. Include a styled callout box (<div style='margin: 16px 0; padding: 14px 18px; background-color: #f8fafc; border-left: 3px solid #0d9488; border-radius: 0 8px 8px 0; font-size: 14px; line-height: 1.6; color: #334155;'>...</div>) for core value proposition. End with a low-friction CTA (reply to email or call). ${hasPanelSignature ? 'STOP immediately after the CTA. DO NOT include any closing sign-off or signature block.' : 'Conclude with a professional closing sign-off and signature synthesized from the website and brand profile.'}"
 }
 `;
 
@@ -110,7 +120,7 @@ Respond ONLY with a valid JSON object matching this schema:
                 return NextResponse.json({
                   success: true,
                   email_subject: parsed.email_subject,
-                  email_body: enforceEmailSignature(parsed.email_body, targetSignature, userProfile),
+                  email_body: enforceEmailSignature(parsed.email_body, hasPanelSignature ? panelSignature : '', userProfile),
                 });
               }
             }
@@ -134,7 +144,7 @@ Respond ONLY with a valid JSON object matching this schema:
           return NextResponse.json({
             success: true,
             email_subject: parsed.email_subject,
-            email_body: enforceEmailSignature(parsed.email_body, targetSignature, userProfile),
+            email_body: enforceEmailSignature(parsed.email_body, hasPanelSignature ? panelSignature : '', userProfile),
           });
         }
       } catch {
@@ -145,7 +155,7 @@ Respond ONLY with a valid JSON object matching this schema:
     return NextResponse.json({
       success: true,
       email_subject: lead.email_subject || `Accelerating operational reach for ${lead.company_name}`,
-      email_body: generateFallbackRewrite(lead, userProfile, targetSignature, portfolioUrl),
+      email_body: generateFallbackRewrite(lead, userProfile, panelSignature, portfolioUrl),
     });
   } catch (error: any) {
     console.error('Lead rewrite API error:', error);

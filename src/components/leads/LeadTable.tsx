@@ -15,10 +15,12 @@ import {
   Mail, 
   CheckSquare, 
   Square, 
-  Plus 
+  Plus,
+  Zap
 } from 'lucide-react';
 import { Lead, LeadStatus } from '@/lib/types';
 import { useApp } from '@/lib/store/app-context';
+import { createClient } from '@/lib/supabase/client';
 import Papa from 'papaparse';
 
 interface LeadTableProps {
@@ -30,17 +32,40 @@ interface LeadTableProps {
 export default function LeadTable({ onSelectLead, onOpenUploader, onOpenManualAdd }: LeadTableProps) {
   const { 
     leads, 
+    userConfig,
     enrichSingleLead, 
     enrichBatchLeads, 
     deleteMultipleLeads, 
-    isProcessingBatch 
+    isProcessingBatch,
+    refreshData
   } = useApp();
 
+  const [isDispatchingNow, setIsDispatchingNow] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedCountry, setSelectedCountry] = useState<string>('all');
   const [selectedSource, setSelectedSource] = useState<string>('all');
+
+  const pendingCount = leads.filter(l => l.status === 'pending').length;
+
+  const handleRunAutonomousDispatch = async () => {
+    setIsDispatchingNow(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const url = user?.id ? `/api/cron/process-leads?userId=${user.id}` : '/api/cron/process-leads';
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        await refreshData();
+      }
+    } catch (e) {
+      console.error('Dispatch error:', e);
+    } finally {
+      setIsDispatchingNow(false);
+    }
+  };
 
   const countries = Array.from(new Set(leads.map(l => l.country).filter(Boolean))) as string[];
   const sources = Array.from(new Set(leads.map(l => l.source).filter(Boolean))) as string[];
@@ -202,6 +227,18 @@ export default function LeadTable({ onSelectLead, onOpenUploader, onOpenManualAd
 
         {/* Primary Action Buttons */}
         <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+          {pendingCount > 0 && (
+            <button
+              onClick={handleRunAutonomousDispatch}
+              disabled={isDispatchingNow}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/20 disabled:opacity-60"
+              title="Process and dispatch pending leads via autonomous queue immediately"
+            >
+              <Zap className={`w-3.5 h-3.5 ${isDispatchingNow ? 'animate-spin' : ''}`} />
+              <span>{isDispatchingNow ? 'Dispatching...' : `Dispatch Queue (${pendingCount})`}</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenManualAdd}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 transition-all shadow-sm"

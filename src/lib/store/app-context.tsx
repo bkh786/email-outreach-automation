@@ -183,6 +183,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
 
           // 2. Fetch real user config from Supabase database via dedicated server API
+          let activeUserConfig: UserConfig = DEFAULT_USER_CONFIG;
           try {
             const configRes = await fetch(`/api/config/get?userId=${user.id}`);
             const configJson = await configRes.json();
@@ -205,6 +206,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 bcc_enabled: cfg.bcc_enabled !== undefined ? cfg.bcc_enabled : Boolean(bcc && String(bcc).trim().length > 0),
                 email_signature: cfg.email_signature || resolvedProfile.email_signature || DEFAULT_USER_CONFIG.email_signature,
               };
+              activeUserConfig = mergedConfig;
               setUserConfig(mergedConfig);
               localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
 
@@ -236,6 +238,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                   bcc_enabled: Boolean(bcc && String(bcc).trim().length > 0),
                   email_signature: configData.email_signature || resolvedProfile.email_signature || DEFAULT_USER_CONFIG.email_signature,
                 };
+                activeUserConfig = mergedConfig;
                 setUserConfig(mergedConfig);
                 localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
               }
@@ -262,6 +265,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 cc_enabled: Boolean(cc && String(cc).trim().length > 0),
                 bcc_enabled: Boolean(bcc && String(bcc).trim().length > 0),
               };
+              activeUserConfig = mergedConfig;
               setUserConfig(mergedConfig);
               localStorage.setItem('marketpulse_config', JSON.stringify(mergedConfig));
             }
@@ -304,6 +308,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (dbLogs) {
             setLogs(dbLogs);
             localStorage.setItem('marketpulse_logs', JSON.stringify(dbLogs));
+          }
+
+          // If autonomous dispatch is enabled, trigger background processing of pending/queued leads
+          if (activeUserConfig.auto_send_enabled) {
+            fetch(`/api/cron/process-leads?userId=${user.id}`, { method: 'POST' }).catch(() => {});
           }
 
           return;
@@ -396,6 +405,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
     };
     await persistLogs([newLog, ...logs]);
+
+    // If autonomous dispatch is enabled, immediately trigger background processing of newly ingested leads
+    if (userConfig.auto_send_enabled) {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        const url = user?.id ? `/api/cron/process-leads?userId=${user.id}` : '/api/cron/process-leads';
+        fetch(url, { method: 'POST' }).then(() => {
+          setTimeout(async () => {
+            if (user?.id) {
+              const res = await fetch(`/api/leads/list?userId=${user.id}`);
+              const data = await res.json();
+              if (data.success && Array.isArray(data.leads)) {
+                setLeads(data.leads);
+                localStorage.setItem('marketpulse_leads', JSON.stringify(data.leads));
+              }
+            }
+          }, 3500);
+        }).catch((err) => console.warn('Auto-dispatch error:', err));
+      } catch (err) {
+        console.warn('Could not launch auto-dispatch:', err);
+      }
+    }
   };
 
   const updateLead = async (id: string, updates: Partial<Lead>) => {
