@@ -21,7 +21,8 @@ import {
   Cpu,
   Check,
   User,
-  Loader2
+  Loader2,
+  Copy
 } from 'lucide-react';
 import { Lead, LeadStatus } from '@/lib/types';
 import { useApp } from '@/lib/store/app-context';
@@ -49,6 +50,59 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
   const [rewriteFeedback, setRewriteFeedback] = useState<string | null>(null);
   const [sendSuccessMessage, setSendSuccessMessage] = useState<string | null>(null);
   const [sendErrorMessage, setSendErrorMessage] = useState<string | null>(null);
+  const [copiedDraft, setCopiedDraft] = useState(false);
+  const [copiedSubject, setCopiedSubject] = useState(false);
+
+  // Copy rich formatted HTML email draft (compatible with Gmail, Outlook, Apple Mail)
+  const handleCopyFormattedDraft = async () => {
+    if (!body || body.trim().length === 0) return;
+    try {
+      const isHtml = /<[a-z][\s\S]*>/i.test(body);
+      const htmlToCopy = isHtml ? body : `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b;">${body.replace(/\n/g, '<br/>')}</div>`;
+      const plainTextToCopy = isHtml 
+        ? body
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<\/p>|<\/div>|<\/tr>|<br\s*\/?>/gi, '\n')
+            .replace(/<\/td>|<\/th>/gi, '  ')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&lt;/gi, '<')
+            .replace(/&gt;/gi, '>')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;/gi, "'")
+            .replace(/\n\s*\n\s*\n/g, '\n\n')
+            .trim()
+        : body;
+
+      if (typeof ClipboardItem !== 'undefined' && navigator.clipboard && navigator.clipboard.write) {
+        const blobHtml = new Blob([htmlToCopy], { type: 'text/html' });
+        const blobText = new Blob([plainTextToCopy], { type: 'text/plain' });
+        const item = new ClipboardItem({
+          'text/html': blobHtml,
+          'text/plain': blobText,
+        });
+        await navigator.clipboard.write([item]);
+      } else {
+        await navigator.clipboard.writeText(plainTextToCopy);
+      }
+      setCopiedDraft(true);
+      setTimeout(() => setCopiedDraft(false), 2500);
+    } catch (err) {
+      console.warn('Rich copy fallback to text copy:', err);
+      navigator.clipboard.writeText(body);
+      setCopiedDraft(true);
+      setTimeout(() => setCopiedDraft(false), 2500);
+    }
+  };
+
+  const handleCopySubject = () => {
+    if (!subject) return;
+    navigator.clipboard.writeText(subject);
+    setCopiedSubject(true);
+    setTimeout(() => setCopiedSubject(false), 2000);
+  };
 
   // Lead metadata edit mode state
   const [isEditingLead, setIsEditingLead] = useState(false);
@@ -325,11 +379,28 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
           )}
 
           {sendErrorMessage && (
-            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <div>
-                <p className="font-bold">Dispatch Error</p>
-                <p className="text-rose-800/80 dark:text-rose-300/80 mt-0.5">{sendErrorMessage}</p>
+            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs space-y-3 shadow-sm">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                <div className="flex-1">
+                  <p className="font-bold text-rose-900 dark:text-rose-200">Outbound SMTP Notice / Dispatch Restriction</p>
+                  <p className="text-rose-800 dark:text-rose-300 mt-0.5">{sendErrorMessage}</p>
+                </div>
+              </div>
+
+              <div className="pt-2.5 border-t border-rose-200/80 dark:border-rose-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-rose-100/50 dark:bg-rose-950/30 p-3 rounded-xl">
+                <div className="text-[11px] text-rose-800 dark:text-rose-300 leading-tight">
+                  <span className="font-bold block">Manual Email Dispatch Ready:</span>
+                  Copy the rich formatted email draft and paste directly into your email client (Gmail, Outlook, Apple Mail).
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyFormattedDraft}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex-shrink-0"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{copiedDraft ? 'Copied Formatted Draft!' : 'Copy Formatted Draft'}</span>
+                </button>
               </div>
             </div>
           )}
@@ -638,6 +709,19 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
                   )}
                 </button>
 
+                {/* Copy Formatted Draft Button */}
+                {(body || lead.email_body) && (
+                  <button
+                    type="button"
+                    onClick={handleCopyFormattedDraft}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-cyan-500/10 hover:bg-teal-100 dark:hover:bg-cyan-500/20 text-xs font-bold text-teal-700 dark:text-cyan-400 transition-colors border border-teal-200 dark:border-cyan-500/30 shadow-xs active:scale-95"
+                    title="Copy rich formatted draft (with typography, bolding, links & signature) to paste directly into Gmail, Outlook, Apple Mail, etc."
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{copiedDraft ? 'Copied Formatted Draft!' : 'Copy Formatted Draft'}</span>
+                  </button>
+                )}
+
                 {/* Clear / Discard Draft Button */}
                 {(subject || body || lead.email_subject || lead.email_body) && (
                   <button
@@ -671,10 +755,10 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { label: '✨ High-Converting & Warm', prompt: 'Rewrite with a consultative, warm executive tone emphasizing tailored synergy and proven ROI.' },
-                    { label: '⚡ Punchy & Concise (<90 words)', prompt: 'Make the email extremely concise, under 90 words, high impact, direct and low friction.' },
-                    { label: '🎯 Synergy & Operations Focused', prompt: 'Highlight core operational capability, direct customs/freight pipelines, and seamless coordination.' },
-                    { label: '🛡️ Certifications & Trust', prompt: 'Focus on enterprise certifications, regulatory compliance, zero-risk execution, and reliability.' },
+                    { label: '✨ High-Converting & Warm', prompt: 'Rewrite with a consultative, warm executive tone emphasizing tailored synergy and proven ROI. CTA must propose a 30-minute conversation any time in the next week.' },
+                    { label: '⚡ Punchy & Concise (<90 words)', prompt: 'Make the email extremely concise, under 90 words, high impact, direct and low friction. CTA must propose a 30-minute introductory call next week.' },
+                    { label: '🎯 Synergy & Operations Focused', prompt: 'Highlight core operational capability, direct delivery pipelines, and seamless coordination. CTA proposing a 30-minute conversation any time next week.' },
+                    { label: '🛡️ Certifications & Trust', prompt: 'Focus on enterprise certifications, regulatory compliance, zero-risk execution, and reliability. CTA proposing a 30-minute call any time next week.' },
                   ].map((preset, idx) => (
                     <button
                       key={idx}
@@ -703,9 +787,22 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
 
             {/* Subject Field */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                Email Subject Line
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Email Subject Line
+                </label>
+                {subject && (
+                  <button
+                    type="button"
+                    onClick={handleCopySubject}
+                    className="flex items-center gap-1 text-[11px] text-teal-600 dark:text-cyan-400 hover:underline font-semibold"
+                    title="Copy Subject Line"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>{copiedSubject ? 'Copied!' : 'Copy Subject'}</span>
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={subject}
@@ -788,14 +885,28 @@ export default function LeadDrawer({ leadId, onClose }: LeadDrawerProps) {
 
         {/* Drawer Action Sticky Footer */}
         <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-[#080D18] sticky bottom-0 z-20 flex items-center justify-between gap-3">
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all shadow-sm active:scale-95"
-          >
-            <Save className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
-            <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all shadow-sm active:scale-95"
+            >
+              <Save className="w-3.5 h-3.5 text-teal-600 dark:text-cyan-400" />
+              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+            </button>
+
+            {(body || lead.email_body) && (
+              <button
+                type="button"
+                onClick={handleCopyFormattedDraft}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-50 dark:bg-cyan-500/10 hover:bg-teal-100 dark:hover:bg-cyan-500/20 text-teal-700 dark:text-cyan-400 border border-teal-200 dark:border-cyan-500/30 text-xs font-bold transition-all shadow-sm active:scale-95"
+                title="Copy rich formatted draft (with styles, links & signature) to paste directly into Gmail, Outlook, Apple Mail, etc."
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>{copiedDraft ? 'Copied Formatted Draft!' : 'Copy Formatted Draft'}</span>
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             <button

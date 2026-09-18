@@ -104,7 +104,7 @@ export function buildEmailDocument(
     h3 { font-size: 16px; }
     a { color: #0d9488; text-decoration: underline; }
     table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
-    th, td { padding: 8px 12px; border: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
+    table.data-table th, table.data-table td { padding: 8px 12px; border: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
     th { background-color: #f8fafc; font-weight: 600; color: #0f172a; }
     ul, ol { margin: 0 0 14px 0; padding-left: 20px; }
     li { margin-bottom: 5px; }
@@ -112,12 +112,13 @@ export function buildEmailDocument(
     hr { border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0; }
     .btn { display: inline-block; padding: 10px 22px; background-color: #0d9488; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 13px; margin: 10px 0; }
     .credential-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0d9488; padding: 16px; border-radius: 8px; margin: 16px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.7; }
+    .email-container-table, .email-container-td { border: none !important; border: 0 !important; outline: none !important; padding: 0 !important; }
   </style>
 </head>
 <body>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 620px; margin: 0 auto; background-color: #ffffff;">
+  <table role="presentation" class="email-container-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 620px; margin: 0 auto; background-color: #ffffff; border: none; border-collapse: collapse;">
     <tr>
-      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b; padding: 0;">
+      <td class="email-container-td" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b; padding: 0; border: none;">
         ${formattedBody}
       </td>
     </tr>

@@ -529,13 +529,18 @@ ${signatureInstructions}
 ${scrapedData?.bodyText ? scrapedData.bodyText.substring(0, 2000) : 'No website content available; leverage industry standard intelligence for this company type.'}
 """
 
+### CALL-TO-ACTION (CTA) MANDATE:
+- When asking for a meeting, conversation, or call, you MUST specify a minimum time slot of 30 minutes (e.g., "a brief, 30-minute conversation" or "a 30-minute introductory call"). NEVER use 10 minutes, 15 minutes, or 20 minutes.
+- For timing, propose flexible scheduling such as "any time in the next week" or "sometime next week that suits your schedule". NEVER specify a single fixed weekday like "next Thursday", "next Tuesday", etc.
+- Example CTA: "Are you open to a brief, 30-minute conversation any time in the next week to explore how we can help elevate ${lead.company_name}'s operations and growth?" or "Would you be open to a 30-minute introductory call any time next week to discuss potential synergies?"
+
 ### TASK:
 Analyze the lead's operational focus and produce a structured JSON response matching the following schema:
 {
   "company_profile": "2-3 concise sentences summarizing what this prospect does, their market focus, and their primary operational footprint.",
   "financial_info": "Observable scale indicators (e.g. estimated office count, market presence, enterprise scale, or tier bracket).",
   "email_subject": "A compelling, 4-8 word, curiosity-inducing cold email subject line customized to the prospect's company and operational focus (avoid cheesy spam phrases).",
-  "email_body": "A tailored, high-converting B2B cold outreach email formatted in clean, professional HTML with inline styles. Requirements: 1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally. 2. Reference specific aspects of ${lead.company_name}'s operations. 3. Clearly bridge sender capabilities to prospect needs using clean <p> tags and a styled callout box (<div style='margin: 16px 0; padding: 14px 18px; background-color: #f8fafc; border-left: 3px solid #0d9488; border-radius: 0 8px 8px 0;'>...</div>) with <strong> tags for key benefits. 4. Low-friction Call to Action. ${portfolioUrl ? `5. Reference or invite the prospect to review our company credentials deck (${portfolioUrl}). ` : ''}${hasPanelSignature ? '6. STOP immediately after the CTA. DO NOT include any closing sign-off or signature block (it will be attached from the signature panel).' : '6. Conclude with a professional closing sign-off and signature generated from the sender website and brand profile.'}"
+  "email_body": "A tailored, high-converting B2B cold outreach email formatted in clean, professional HTML with inline styles. Requirements: 1. Address ${lead.contact_person ? lead.contact_person.split(' ')[0] : 'there'} naturally. 2. Reference specific aspects of ${lead.company_name}'s operations. 3. Clearly bridge sender capabilities to prospect needs using clean <p> tags and a styled callout box (<div style='margin: 16px 0; padding: 14px 18px; background-color: #f8fafc; border-left: 3px solid #0d9488; border-radius: 0 8px 8px 0;'>...</div>) with <strong> tags for key benefits. 4. Call to Action: Propose a 30-minute conversation any time in the next week (minimum 30 minutes, flexible next week timing, never 10 minutes, never next Thursday). ${portfolioUrl ? `5. Reference or invite the prospect to review our company credentials deck (${portfolioUrl}). ` : ''}${hasPanelSignature ? '6. STOP immediately after the CTA. DO NOT include any closing sign-off or signature block (it will be attached from the signature panel).' : '6. Conclude with a professional closing sign-off and signature generated from the sender website and brand profile.'}"
 }
 
 Return ONLY valid JSON matching this exact structure.
@@ -658,7 +663,7 @@ function generateFallbackEnrichment(
   </div>` : ''}
 
   <p style="margin: 0 0 16px 0;">
-    If this aligns with your current priorities, simply reply directly to this email or call us on the contact number below, and we'll be glad to share relevant benchmarks.
+    Are you open to a brief, 30-minute conversation any time in the next week to explore how we can help elevate ${companyName}'s operations and growth? Feel free to reply directly to this email or reach out on the contact details below.
   </p>
 
   ${formatSignatureAsHtml(userProfile.email_signature || '', userProfile)}
