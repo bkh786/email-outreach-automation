@@ -1,25 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = createAdminClient();
 
-    // 1. Fetch all users from Supabase Auth
-    const { data: { users }, error: authError } = await supabase.auth.admin.listUsers();
+    // 1. Fetch all users from Supabase Auth with max page size
+    const { data: { users }, error: authError } = await supabase.auth.admin.listUsers({
+      perPage: 1000,
+    });
+
     if (authError) {
-      return NextResponse.json({ success: false, error: authError.message }, { status: 400 });
+      console.error('List tenants auth error:', authError);
+      return NextResponse.json(
+        { success: false, error: authError.message },
+        { 
+          status: 400,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          }
+        }
+      );
     }
 
     // 2. Fetch profiles
-    const { data: profiles, error: profileError } = await supabase.from('profiles').select('*');
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('*');
     
     // 3. Fetch lead counts per user
-    const { data: leads, error: leadError } = await supabase.from('leads').select('user_id, status');
+    const { data: leads, error: leadError } = await supabase
+      .from('leads')
+      .select('user_id, status');
 
     const profileMap = new Map((profiles || []).map(p => [p.id, p]));
-    
     const leadStatsMap = new Map<string, { total: number; sent: number; pending: number }>();
+
     (leads || []).forEach(l => {
       if (!l.user_id) return;
       const stat = leadStatsMap.get(l.user_id) || { total: 0, sent: 0, pending: 0 };
@@ -29,15 +48,27 @@ export async function GET(req: NextRequest) {
       leadStatsMap.set(l.user_id, stat);
     });
 
+    const userMap = new Map<string, boolean>();
+
+    // Build tenant list from Auth Users
     const tenantList = (users || []).map(u => {
+      userMap.set(u.id, true);
       const p = profileMap.get(u.id);
       const stats = leadStatsMap.get(u.id) || { total: 0, sent: 0, pending: 0 };
+      
+      const isSuperAdmin =
+        p?.role === 'super_admin' ||
+        u.user_metadata?.role === 'super_admin' ||
+        u.email === 'bkh786@gmail.com' ||
+        u.email === 'admin@freightpulse.ai' ||
+        u.email === 'admin@marketpulse.ai';
+
       return {
         id: u.id,
-        email: u.email,
-        company_name: p?.company_name || u.user_metadata?.company_name || 'Client Agency',
-        role: p?.role || u.user_metadata?.role || 'client',
-        created_at: u.created_at,
+        email: u.email || '',
+        company_name: p?.company_name || u.user_metadata?.company_name || (isSuperAdmin ? 'Digi Presence Solutions' : 'Client Agency'),
+        role: isSuperAdmin ? 'super_admin' : (p?.role || u.user_metadata?.role || 'client'),
+        created_at: u.created_at || (p as any)?.created_at || new Date().toISOString(),
         last_sign_in_at: u.last_sign_in_at,
         stats,
         services_offered: p?.services_offered || [],
@@ -47,14 +78,57 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({
-      success: true,
-      tenants: tenantList,
+    // Ensure any profiles that weren't in auth.users are also captured
+    (profiles || []).forEach(p => {
+      if (!userMap.has(p.id)) {
+        const stats = leadStatsMap.get(p.id) || { total: 0, sent: 0, pending: 0 };
+        const isSuperAdmin = p.role === 'super_admin';
+        tenantList.push({
+          id: p.id,
+          email: (p as any).email || 'tenant@portal.local',
+          company_name: p.company_name || (isSuperAdmin ? 'Digi Presence Solutions' : 'Client Agency'),
+          role: p.role || 'client',
+          created_at: p.updated_at || new Date().toISOString(),
+          last_sign_in_at: undefined,
+          stats,
+          services_offered: p.services_offered || [],
+          target_markets: p.target_markets || [],
+          contact_person: p.contact_person || '',
+          contact_number: (p as any).phone || '',
+        });
+      }
     });
+
+    // Sort: newest tenants first (Super Admin remains accessible)
+    tenantList.sort((a, b) => {
+      const timeA = new Date(a.created_at).getTime() || 0;
+      const timeB = new Date(b.created_at).getTime() || 0;
+      return timeB - timeA;
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        tenants: tenantList,
+        count: tenantList.length,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Surrogate-Control': 'no-store',
+        },
+      }
+    );
   } catch (error: any) {
+    console.error('List tenants server error:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to list tenants' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        }
+      }
     );
   }
 }

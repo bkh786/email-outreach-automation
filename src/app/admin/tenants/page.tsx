@@ -56,6 +56,7 @@ export default function AdminTenantsPage() {
       error: string | null;
       messageId: string | null;
       provider: string;
+      senderEmail?: string;
     };
     tenantDetails?: {
       name: string;
@@ -77,33 +78,20 @@ export default function AdminTenantsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/list-tenants');
+      const res = await fetch(`/api/admin/list-tenants?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      });
       const data = await res.json();
-      if (data.success) {
-        setTenants(data.tenants || []);
+      if (data.success && Array.isArray(data.tenants)) {
+        setTenants(data.tenants);
       } else {
-        setTenants([
-          {
-            id: 'admin-master',
-            email: 'admin@marketpulse.ai',
-            company_name: 'MarketPulse Master Platform',
-            role: 'super_admin',
-            created_at: new Date().toISOString(),
-            stats: { total: 6, sent: 1, pending: 3 },
-            target_markets: ['Global Trade Corridors'],
-          },
-          {
-            id: 'tenant-1',
-            email: 'ops@apexocean.com',
-            company_name: 'Apex Ocean Logistics LLC',
-            role: 'client',
-            created_at: new Date(Date.now() - 3600 * 1000 * 48).toISOString(),
-            stats: { total: 42, sent: 18, pending: 6 },
-            target_markets: ['Asia -> North America'],
-          },
-        ]);
+        throw new Error(data.error || 'Failed to load client tenants');
       }
     } catch (e: any) {
+      console.error('Fetch tenants error:', e);
       setError(e.message || 'Failed to load tenants');
     } finally {
       setLoading(false);
@@ -139,6 +127,15 @@ export default function AdminTenantsPage() {
 
       setSuccessMessage(`Tenant '${form.company_name}' successfully provisioned! Welcome onboarding email generated.`);
       
+      // Optimistically prepend newly provisioned tenant to state immediately
+      if (data.tenant) {
+        setTenants(prev => {
+          const exists = prev.some(t => t.id === data.tenant.id || t.email === data.tenant.email);
+          if (exists) return prev;
+          return [data.tenant, ...prev];
+        });
+      }
+
       // Capture populated welcome email for immediate display at bottom of page
       if (data.welcomeEmail) {
         setActiveWelcomeEmail({
@@ -164,7 +161,11 @@ export default function AdminTenantsPage() {
         services_offered: 'Transpacific Ocean FCL/LCL, Expedited Air Freight, Customs Clearance',
         max_daily_emails: 50,
       });
-      fetchTenants();
+
+      // Synchronize fully from database
+      setTimeout(() => {
+        fetchTenants();
+      }, 400);
 
       // Smooth scroll down to populated email section
       setTimeout(() => {
@@ -191,7 +192,7 @@ export default function AdminTenantsPage() {
   const handleSelectPastTenantForWelcome = async (tenant: Tenant) => {
     try {
       // Fetch fresh template
-      const tRes = await fetch('/api/admin/welcome-template');
+      const tRes = await fetch(`/api/admin/welcome-template?_t=${Date.now()}`);
       const tData = await tRes.json();
       const rawSubject = tData.subject || 'Welcome to {{business_name}} — Your Outreach Portal Credentials';
       const rawBody = tData.template || 'Dear {{name}},\n\nWelcome to {{business_name}}!';
@@ -226,7 +227,8 @@ export default function AdminTenantsPage() {
           simulated: false,
           error: null,
           messageId: 'dispatched-tenant',
-          provider: 'Configured SMTP Relay',
+          provider: 'Super Admin SMTP Server (smtp-relay.gmail.com)',
+          senderEmail: 'Digi Presence Solutions <contact@digipresence.in>',
         },
         tenantDetails: {
           name,
@@ -246,6 +248,50 @@ export default function AdminTenantsPage() {
     }
   };
 
+  const handleDispatchWelcomeEmail = async () => {
+    if (!activeWelcomeEmail) return;
+    setIsResendingWelcome(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/send-welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: activeWelcomeEmail.to,
+          company_name: activeWelcomeEmail.tenantDetails?.business_name,
+          contact_person: activeWelcomeEmail.tenantDetails?.name,
+          contact_number: activeWelcomeEmail.tenantDetails?.contact_number,
+          temporary_password: activeWelcomeEmail.tenantDetails?.temporary_password,
+          customSubject: activeWelcomeEmail.subject,
+          customBody: activeWelcomeEmail.body,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to dispatch welcome email');
+      }
+
+      setActiveWelcomeEmail(prev => prev ? {
+        ...prev,
+        dispatchStatus: {
+          sent: true,
+          simulated: false,
+          error: null,
+          messageId: data.messageId || `msg-${Date.now()}`,
+          provider: data.provider || 'Super Admin SMTP Relay',
+          senderEmail: data.fromAddress,
+        },
+      } : null);
+
+      setSuccessMessage(`Welcome onboarding email successfully dispatched to ${activeWelcomeEmail.to} via Super Admin SMTP!`);
+    } catch (err: any) {
+      console.error('Error dispatching welcome email:', err);
+      setError(err.message || 'Failed to send welcome email');
+    } finally {
+      setIsResendingWelcome(false);
+    }
+  };
+
   const copyCredentials = (email: string) => {
     navigator.clipboard.writeText(`MarketPulse AI Client Login:\nURL: ${window.location.origin}/login\nEmail: ${email}`);
     setCopiedId(email);
@@ -253,8 +299,8 @@ export default function AdminTenantsPage() {
   };
 
   const filteredTenants = tenants.filter(t => 
-    t.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.email.toLowerCase().includes(searchQuery.toLowerCase())
+    t.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -268,7 +314,7 @@ export default function AdminTenantsPage() {
           </div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <Building2 className="w-6 h-6 text-teal-600 dark:text-cyan-400" />
-            Client Tenant Provisioning & Management
+            Client Tenant Provisioning &amp; Management
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Create independent tenant accounts for each logistics client with isolated Row-Level Security and custom trade profiles.
@@ -292,6 +338,19 @@ export default function AdminTenantsPage() {
             <span>{successMessage}</span>
           </div>
           <button onClick={() => setSuccessMessage(null)} className="text-emerald-700 dark:text-emerald-400 font-bold hover:underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Error Notification */}
+      {error && (
+        <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="text-rose-700 dark:text-rose-400 font-bold hover:underline">
             Dismiss
           </button>
         </div>
@@ -362,7 +421,7 @@ export default function AdminTenantsPage() {
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-teal-700 dark:text-cyan-400 font-bold text-xs">
-                        {tenant.company_name.slice(0, 2).toUpperCase()}
+                        {(tenant.company_name || 'CA').slice(0, 2).toUpperCase()}
                       </div>
                       <div>
                         <p className="font-bold text-slate-900 dark:text-white">{tenant.company_name}</p>
@@ -440,10 +499,10 @@ export default function AdminTenantsPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-                    Tenant Onboarding Welcome Mailer (Populated from Template)
+                    Tenant Onboarding Welcome Mailer (Super Admin Dispatched)
                   </h3>
                   <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 dark:bg-cyan-500/20 dark:text-cyan-300 font-mono">
-                    Live Dispatch
+                    Super Admin SMTP
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -454,6 +513,15 @@ export default function AdminTenantsPage() {
 
             {/* Quick Action Buttons */}
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleDispatchWelcomeEmail}
+                disabled={isResendingWelcome}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 dark:bg-gradient-to-r dark:from-cyan-500 dark:to-teal-500 text-white dark:text-slate-950 text-xs font-bold transition-all active:scale-95 shadow-sm"
+              >
+                <Send className={`w-3.5 h-3.5 ${isResendingWelcome ? 'animate-spin' : ''}`} />
+                <span>{isResendingWelcome ? 'Dispatching...' : 'Dispatch / Resend Welcome Email'}</span>
+              </button>
+
               <button
                 onClick={copyWelcomeEmail}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all active:scale-95"
@@ -525,13 +593,16 @@ export default function AdminTenantsPage() {
               <div>
                 <p className="font-bold">
                   {activeWelcomeEmail.dispatchStatus.sent
-                    ? `Dispatched via Outbound SMTP Server (${activeWelcomeEmail.dispatchStatus.provider})`
+                    ? `Dispatched via Super Admin SMTP Server (${activeWelcomeEmail.dispatchStatus.provider})`
                     : activeWelcomeEmail.dispatchStatus.simulated
                     ? 'Automailer Delivery Simulated (No active SMTP configured in Settings & BYOK)'
                     : 'Automailer SMTP Delivery Error'}
                 </p>
                 <p className="text-[11px] opacity-90 mt-0.5">
                   Recipient: <span className="font-mono font-semibold">{activeWelcomeEmail.to}</span>
+                  {activeWelcomeEmail.dispatchStatus.senderEmail && (
+                    <span> &bull; From: <span className="font-semibold">{activeWelcomeEmail.dispatchStatus.senderEmail}</span></span>
+                  )}
                   {activeWelcomeEmail.dispatchStatus.messageId && (
                     <span> &bull; Message ID: <span className="font-mono">{activeWelcomeEmail.dispatchStatus.messageId}</span></span>
                   )}
@@ -543,7 +614,7 @@ export default function AdminTenantsPage() {
             </div>
 
             <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 border border-current shadow-sm flex-shrink-0">
-              {activeWelcomeEmail.dispatchStatus.sent ? 'Delivered via SMTP' : 'Ready / Simulated'}
+              {activeWelcomeEmail.dispatchStatus.sent ? 'Super Admin SMTP' : 'Ready / Simulated'}
             </span>
           </div>
 

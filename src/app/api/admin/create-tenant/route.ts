@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/mailer';
 import { DEFAULT_WELCOME_SUBJECT, DEFAULT_WELCOME_TEMPLATE } from '@/lib/welcome-constants';
+import { getSuperAdminContext, getSuperAdminSmtpConfig } from '@/lib/super-admin';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,6 +30,18 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createAdminClient();
+
+    // Determine caller user ID if session exists
+    let callerUserId: string | null = null;
+    try {
+      const serverSupabase = createServerSupabaseClient();
+      const { data: { user } } = await serverSupabase.auth.getUser();
+      if (user) {
+        callerUserId = user.id;
+      }
+    } catch {
+      // ignore
+    }
 
     // 1. Create the tenant user in Supabase Auth (auto-confirmed)
     const { data: userData, error: authError } = await supabase.auth.admin.createUser({
@@ -64,7 +81,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     });
 
-    // 3. Insert/Update Tenant Config
+    // 3. Insert/Update Tenant Config (Default unconfigured SMTP for new client)
     const { error: configError } = await supabase.from('user_configs').upsert({
       id: userId,
       from_name: `${contact_person || 'Operations'} | ${company_name}`,
@@ -75,22 +92,16 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     });
 
-    // 4. Fetch Welcome Email Template
+    // 4. Fetch Welcome Email Template specifically from Super Admin's config
     let rawSubject = DEFAULT_WELCOME_SUBJECT;
     let rawTemplate = DEFAULT_WELCOME_TEMPLATE;
 
     try {
-      // Check user_configs for custom template
-      const { data: configs } = await supabase
-        .from('user_configs')
-        .select('welcome_email_template, welcome_email_subject')
-        .not('welcome_email_template', 'is', null)
-        .limit(1);
-
-      if (configs && configs[0]?.welcome_email_template) {
-        rawTemplate = configs[0].welcome_email_template;
-        if (configs[0].welcome_email_subject) {
-          rawSubject = configs[0].welcome_email_subject;
+      const superAdminCtx = await getSuperAdminContext(supabase, callerUserId);
+      if (superAdminCtx?.config?.welcome_email_template) {
+        rawTemplate = superAdminCtx.config.welcome_email_template;
+        if (superAdminCtx.config.welcome_email_subject) {
+          rawSubject = superAdminCtx.config.welcome_email_subject;
         }
       }
     } catch (e) {
@@ -123,44 +134,26 @@ export async function POST(req: NextRequest) {
     const finalSubject = interpolate(rawSubject);
     const finalBody = interpolate(rawTemplate);
 
-    // 6. Fetch configured SMTP provider from Settings to dispatch welcome email
+    // 6. Fetch Super Admin SMTP provider strictly (NEVER fall back to client tenant credentials)
     let emailDispatchStatus = {
       sent: false,
       simulated: false,
       error: null as string | null,
       messageId: null as string | null,
       provider: 'None',
+      senderEmail: '',
     };
 
     try {
-      // Find configured SMTP settings from super admin or active user_configs
-      const { data: smtpConfigs } = await supabase
-        .from('user_configs')
-        .select('*')
-        .not('smtp_host', 'is', null)
-        .not('smtp_user', 'is', null)
-        .not('smtp_pass', 'is', null)
-        .order('updated_at', { ascending: false });
+      const superAdminSmtpRes = await getSuperAdminSmtpConfig(supabase, callerUserId);
 
-      const activeSmtpConfig = smtpConfigs && smtpConfigs.length > 0 
-        ? smtpConfigs.find(c => c.smtp_host && c.smtp_user && c.smtp_pass)
-        : null;
-
-      if (activeSmtpConfig && activeSmtpConfig.smtp_host && activeSmtpConfig.smtp_user && activeSmtpConfig.smtp_pass) {
-        emailDispatchStatus.provider = activeSmtpConfig.smtp_host;
-
-        const smtpPayload = {
-          host: activeSmtpConfig.smtp_host,
-          port: activeSmtpConfig.smtp_port || 587,
-          user: activeSmtpConfig.smtp_user,
-          pass: activeSmtpConfig.smtp_pass,
-          secure: activeSmtpConfig.smtp_secure ?? false,
-          fromName: activeSmtpConfig.from_name || 'MarketPulse Operations',
-          fromEmail: activeSmtpConfig.from_email || activeSmtpConfig.smtp_user,
-        };
+      if (superAdminSmtpRes && superAdminSmtpRes.smtpConfig) {
+        const { smtpConfig, superAdmin } = superAdminSmtpRes;
+        emailDispatchStatus.provider = smtpConfig.host;
+        emailDispatchStatus.senderEmail = `${smtpConfig.fromName} <${smtpConfig.fromEmail || smtpConfig.user}>`;
 
         const result = await sendEmail({
-          config: smtpPayload,
+          config: smtpConfig,
           to: email,
           subject: finalSubject,
           body: finalBody,
@@ -171,12 +164,12 @@ export async function POST(req: NextRequest) {
           emailDispatchStatus.messageId = result.messageId || `msg-${Date.now()}`;
         } else {
           emailDispatchStatus.sent = false;
-          emailDispatchStatus.error = result.error || 'SMTP delivery failed';
+          emailDispatchStatus.error = result.error || 'Super Admin SMTP delivery failed';
         }
       } else {
-        // No active SMTP credentials yet in Settings & BYOK
+        // No active Super Admin SMTP credentials configured in Settings & BYOK
         emailDispatchStatus.simulated = true;
-        emailDispatchStatus.error = 'SMTP account not yet configured in Settings & BYOK (email delivery simulated).';
+        emailDispatchStatus.error = 'Super Admin SMTP not configured in Settings & BYOK (email delivery simulated).';
       }
     } catch (smtpErr: any) {
       console.error('Welcome email dispatch error:', smtpErr);
@@ -193,6 +186,10 @@ export async function POST(req: NextRequest) {
         contact_person: safeContactPerson,
         contact_number: safeContactNumber,
         created_at: userData.user.created_at,
+        role: 'client',
+        stats: { total: 0, sent: 0, pending: 0 },
+        services_offered: services_offered || ['Air Freight Expedited', 'Ocean FCL/LCL', 'Customs Clearance'],
+        target_markets: target_markets || ['USA', 'Europe', 'Asia'],
       },
       welcomeEmail: {
         to: email,
@@ -209,4 +206,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
